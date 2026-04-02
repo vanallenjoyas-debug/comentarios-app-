@@ -58,13 +58,12 @@
   .comment-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--border); }
   .comment-likes { padding: 6px 14px; font-size: 12px; color: var(--text3); border-bottom: 1px solid var(--border); }
   .reply-area { padding: 12px 14px; }
-  .reply-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.4; resize: none; outline: none; min-height: 70px; -webkit-appearance: none; }
+  .reply-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.4; resize: none; outline: none; min-height: 70px; -webkit-appearance: none; transition: border-color 0.2s; }
   .reply-input:focus { border-color: var(--accent2); }
   .reply-input::placeholder { color: var(--text3); }
+  .reply-input.loading-suggestion { border-color: var(--accent2); opacity: 0.6; }
   .reply-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
   .btn-skip { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 16px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
-  .btn-ai { background: none; border: 1px solid var(--accent2); border-radius: var(--radius-sm); padding: 9px 16px; color: var(--accent2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
-  .btn-ai:disabled { opacity: 0.4; cursor: not-allowed; }
   .btn-send { background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 20px; color: #0f0f0f; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   .answered-badge { padding: 10px 14px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px; }
@@ -125,6 +124,9 @@
 const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
 let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,ytConnected=false,videoTitles={};
+const suggestions={};
+const suggestingNow=new Set();
+let observer=null;
 
 async function checkYTStatus(){try{const token=localStorage.getItem('yt_token');if(!token){ytConnected=false;updateYTStatus();return;}const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();ytConnected=d.authenticated;updateYTStatus();}catch(e){ytConnected=false;updateYTStatus();}}
 function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
@@ -132,18 +134,123 @@ async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube
 function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadComments();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
 function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
-async function loadComments(pageToken=null){if(!ytConnected){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">▶️</span>Conectá YouTube primero</div>';return;}if(!pageToken){document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';comments=[];}try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});if(r.status===401){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🔐</span>Sesión expirada. Reconectá YouTube.</div>';return;}const data=await r.json();const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));comments=pageToken?[...comments,...nc]:nc;nextPageToken=data.nextPageToken;loadVideoTitles(nc);renderFeed();updateStats();}catch(e){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">❌</span>Error al cargar</div>';}}
+
+async function fetchSuggestion(id,text){
+  if(suggestions[id]||suggestingNow.has(id))return;
+  suggestingNow.add(id);
+  const ta=document.getElementById(`reply-${id}`);
+  if(ta){ta.placeholder='✨ Generando sugerencia...';ta.classList.add('loading-suggestion');}
+  try{
+    const r=await fetch(`${BACKEND}/suggest-reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:text})});
+    const data=await r.json();
+    if(data.suggestion){
+      suggestions[id]=data.suggestion;
+      const ta2=document.getElementById(`reply-${id}`);
+      if(ta2&&!ta2.dataset.edited){ta2.value=data.suggestion;ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribí tu respuesta...';}
+    }
+  }catch(e){
+    const ta2=document.getElementById(`reply-${id}`);
+    if(ta2){ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribí tu respuesta...';}
+  }finally{suggestingNow.delete(id);}
+}
+
+function setupObserver(){
+  if(observer)observer.disconnect();
+  observer=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      if(entry.isIntersecting){
+        const id=entry.target.dataset.commentId;
+        const c=comments.find(x=>x.id===id);
+        if(c&&!c.answered)fetchSuggestion(id,c.text);
+      }
+    });
+  },{threshold:0.2});
+  document.querySelectorAll('.comment-card[data-comment-id]').forEach(el=>observer.observe(el));
+}
+
+async function loadComments(pageToken=null){
+  if(!ytConnected){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">▶️</span>Conectá YouTube primero</div>';return;}
+  if(!pageToken){document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';comments=[];}
+  try{
+    const token=localStorage.getItem('yt_token');
+    const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    if(r.status===401){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🔐</span>Sesión expirada. Reconectá YouTube.</div>';return;}
+    const data=await r.json();
+    const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
+    comments=pageToken?[...comments,...nc]:nc;
+    nextPageToken=data.nextPageToken;
+    loadVideoTitles(nc);
+    renderFeed();
+    updateStats();
+  }catch(e){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">❌</span>Error al cargar</div>';}
+}
+
 async function loadVideoTitles(cs){const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];for(const id of ids){if(videoTitles[id])continue;try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();videoTitles[id]=d.title;}catch(e){}}renderFeed();}
 function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
-function renderFeed(){const feed=document.getElementById('feed');let f=comments.filter(c=>currentFilter==='all'?!c.answered:c.answered);if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}document.getElementById('load-more-container').innerHTML=nextPageToken?`<button class="load-more" onclick="loadComments('${nextPageToken}')">Cargar más</button>`:'';}
-function buildCard(c){const t=formatTime(c.publishedAt);const v=videoTitles[c.videoId]||'YouTube';return `<div class="comment-card ${c.answered?'answered':''}" id="card-${c.id}"><div class="card-top"><img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'"><div class="card-meta"><div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label">YouTube</span><span class="timestamp">${t}</span></div><div class="post-ref">${esc(v)}</div></div></div><div class="comment-text">${esc(c.text)}</div>${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''} ${c.answered?`<div class="answered-badge">Respondido</div>`:`<div class="reply-area"><textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3"></textarea><div class="reply-actions"><button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button><button class="btn-ai" id="ai-btn-${c.id}" onclick="suggestReply('${c.id}')">✨ Sugerir</button><button class="btn-send" onclick="sendReply('${c.id}')">Publicar →</button></div></div>`}</div>`;}
+
+function renderFeed(){
+  const feed=document.getElementById('feed');
+  let f=comments.filter(c=>currentFilter==='all'?!c.answered:c.answered);
+  if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
+  else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
+  document.getElementById('load-more-container').innerHTML=nextPageToken?`<button class="load-more" onclick="loadComments('${nextPageToken}')">Cargar más</button>`:'';
+  f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById(`reply-${c.id}`);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
+  setupObserver();
+}
+
+function buildCard(c){
+  const t=formatTime(c.publishedAt);
+  const v=videoTitles[c.videoId]||'YouTube';
+  return `<div class="comment-card ${c.answered?'answered':''}" id="card-${c.id}" data-comment-id="${c.id}">
+    <div class="card-top">
+      <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
+      <div class="card-meta">
+        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label">YouTube</span><span class="timestamp">${t}</span></div>
+        <div class="post-ref">${esc(v)}</div>
+      </div>
+    </div>
+    <div class="comment-text">${esc(c.text)}</div>
+    ${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''}
+    ${c.answered?`<div class="answered-badge">Respondido</div>`:`
+      <div class="reply-area">
+        <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
+        <div class="reply-actions">
+          <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
+          <button class="btn-send" onclick="sendReply('${c.id}')">Publicar →</button>
+        </div>
+      </div>`}
+  </div>`;
+}
+
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return `hace ${m}m`;const h=Math.floor(m/60);if(h<24)return `hace ${h}h`;return `hace ${Math.floor(h/24)}d`;}
-async function suggestReply(id){const c=comments.find(x=>x.id===id);if(!c)return;const btn=document.getElementById(`ai-btn-${id}`);if(btn){btn.disabled=true;btn.textContent='...';}try{const r=await fetch(`${BACKEND}/suggest-reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:c.text})});const data=await r.json();if(data.suggestion){const ta=document.getElementById(`reply-${id}`);if(ta)ta.value=data.suggestion;}else{showToast('Sin sugerencia');}}catch(e){showToast('Error al sugerir');}finally{if(btn){btn.disabled=false;btn.textContent='✨ Sugerir';}}}
-async function sendReply(id){const ta=document.getElementById(`reply-${id}`);const text=ta?ta.value.trim():'';if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}const btn=document.querySelector(`#card-${id} .btn-send`);if(btn){btn.disabled=true;btn.textContent='Publicando...';}try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{'X-YT-Token':token}:{})},credentials:'include',body:JSON.stringify({text})});if(r.ok){const c=comments.find(x=>x.id===id);if(c){c.answered=true;answeredIds.push(id);localStorage.setItem('answeredIds',JSON.stringify(answeredIds));}showToast('✓ Publicado en YouTube');renderFeed();updateStats();}else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}}catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}}
-function skipComment(id){const c=comments.find(x=>x.id===id);if(c){comments=comments.filter(x=>x.id!==id);comments.push(c);renderFeed();}}
+
+async function sendReply(id){
+  const ta=document.getElementById(`reply-${id}`);
+  const text=ta?ta.value.trim():'';
+  if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
+  const btn=document.querySelector(`#card-${id} .btn-send`);
+  if(btn){btn.disabled=true;btn.textContent='Publicando...';}
+  try{
+    const token=localStorage.getItem('yt_token');
+    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{'X-YT-Token':token}:{})},credentials:'include',body:JSON.stringify({text})});
+    if(r.ok){
+      const c=comments.find(x=>x.id===id);
+      if(c){c.answered=true;answeredIds.push(id);localStorage.setItem('answeredIds',JSON.stringify(answeredIds));}
+      showToast('✓ Publicado en YouTube');renderFeed();updateStats();
+    }else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
+  }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
+}
+
+function skipComment(id){
+  delete suggestions[id];
+  const c=comments.find(x=>x.id===id);
+  if(c){comments=comments.filter(x=>x.id!==id);comments.push(c);renderFeed();}
+}
+
 function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
 checkYTStatus();
 const params=new URLSearchParams(window.location.search);
 if(params.get('auth')==='success'){const token=params.get('token');if(token){localStorage.setItem('yt_token',token);}ytConnected=true;updateYTStatus();showToast('✓ YouTube conectado!');history.replaceState({},'','/');}
