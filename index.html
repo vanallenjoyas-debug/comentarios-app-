@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Comentarios — Joyería Sudaca</title>
+<title>Comentarios</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -12,35 +12,34 @@
     --text: #f0f0f0; --text2: #888; --text3: #555;
     --accent: #e8d5a3; --accent2: #c4a96a;
     --green: #4ade80; --red: #f87171;
-    --ig: #e1306c; --yt: #ff0000; --fb: #1877f2; --tt: #f0f0f0;
     --radius: 14px; --radius-sm: 8px;
   }
   html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; -webkit-font-smoothing: antialiased; }
   #login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; gap: 32px; }
-  .login-logo { text-align: center; }
-  .login-logo .brand { font-size: 13px; letter-spacing: 0.15em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; }
-  .login-logo h1 { font-size: 28px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; }
+  .login-logo .brand { font-size: 13px; letter-spacing: 0.15em; color: var(--text3); text-transform: uppercase; margin-bottom: 6px; text-align: center; }
+  .login-logo h1 { font-size: 28px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-align: center; }
   .login-box { width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; display: flex; flex-direction: column; gap: 16px; }
   .field { display: flex; flex-direction: column; gap: 6px; }
   .field label { font-size: 12px; color: var(--text2); letter-spacing: 0.05em; text-transform: uppercase; }
-  .field input { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; }
+  .field input { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 13px 14px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; outline: none; -webkit-appearance: none; }
   .field input:focus { border-color: var(--accent2); }
-  .btn-primary { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
   .login-error { font-size: 13px; color: var(--red); text-align: center; display: none; }
-  .btn-google { background: #fff; color: #333; border: 1px solid #ddd; border-radius: var(--radius-sm); padding: 13px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .separator { display: flex; align-items: center; gap: 10px; color: var(--text3); font-size: 12px; }
-  .separator::before, .separator::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .btn-google { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .divider { display: flex; align-items: center; gap: 12px; color: var(--text3); font-size: 12px; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .yt-status { font-size: 12px; text-align: center; padding: 8px; border-radius: var(--radius-sm); }
+  .yt-status.connected { color: var(--green); background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); }
+  .yt-status.disconnected { color: var(--text3); background: var(--surface2); border: 1px solid var(--border); }
   #app { display: none; flex-direction: column; min-height: 100vh; }
   .app-header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
   .app-header h2 { font-size: 17px; font-weight: 600; color: var(--accent); }
   .header-right { display: flex; align-items: center; gap: 12px; }
   .badge-count { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; }
   .btn-logout { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
-  .yt-badge { background: rgba(255,0,0,0.15); color: #ff6666; border-radius: 6px; padding: 3px 8px; font-size: 11px; font-family: 'DM Mono', monospace; }
   .filter-bar { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
   .filter-bar::-webkit-scrollbar { display: none; }
-  .filter-chip { flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .filter-chip { flex-shrink: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--text2); cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
   .filter-chip.active { background: var(--surface2); border-color: var(--accent2); color: var(--accent); }
   .feed { flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); font-size: 14px; line-height: 1.6; }
@@ -49,31 +48,34 @@
   @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .comment-card.answered { border-color: #2a3a2a; opacity: 0.6; }
   .card-top { padding: 14px 14px 10px; display: flex; align-items: flex-start; gap: 10px; }
-  .author-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--surface2); }
+  .author-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
   .card-meta { flex: 1; min-width: 0; }
   .card-meta-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
-  .username { font-weight: 600; font-size: 14px; color: var(--text); }
-  .timestamp { font-size: 11px; color: var(--text3); margin-left: auto; flex-shrink: 0; }
+  .username { font-weight: 600; font-size: 14px; }
+  .network-label { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .timestamp { font-size: 11px; color: var(--text3); margin-left: auto; }
   .post-ref { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .comment-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; color: var(--text); border-bottom: 1px solid var(--border); }
+  .comment-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--border); }
+  .comment-likes { padding: 6px 14px; font-size: 12px; color: var(--text3); border-bottom: 1px solid var(--border); }
   .reply-area { padding: 12px 14px; }
-  .reply-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.4; resize: none; outline: none; min-height: 70px; transition: border-color 0.15s; -webkit-appearance: none; }
+  .reply-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.4; resize: none; outline: none; min-height: 70px; -webkit-appearance: none; }
   .reply-input:focus { border-color: var(--accent2); }
   .reply-input::placeholder { color: var(--text3); }
   .reply-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
   .btn-skip { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 16px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
   .btn-send { background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 20px; color: #0f0f0f; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-send:disabled { opacity: 0.4; }
+  .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   .answered-badge { padding: 10px 14px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px; }
   .answered-badge::before { content: "✓"; font-weight: 700; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; color: var(--text); z-index: 999; transition: transform 0.25s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
   .stats-bar { padding: 10px 16px; display: flex; gap: 16px; border-top: 1px solid var(--border); background: var(--bg); }
   .stat { display: flex; flex-direction: column; gap: 2px; }
   .stat-val { font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 500; color: var(--accent); }
   .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; color: var(--text); z-index: 999; transition: transform 0.25s ease; white-space: nowrap; }
-  .toast.show { transform: translateX(-50%) translateY(0); }
+  .load-more { margin: 8px 16px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; width: calc(100% - 32px); }
   .loading { text-align: center; padding: 40px; color: var(--text3); }
-  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 8px; }
+  .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -84,13 +86,14 @@
     <h1>Joyería Sudaca</h1>
   </div>
   <div class="login-box">
-    <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu usuario" autocapitalize="none"></div>
-    <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+    <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu usuario" autocomplete="username" autocapitalize="none"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn-primary" onclick="doLogin()">Entrar</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
-    <div class="separator">o</div>
-    <button class="btn-google" onclick="loginWithYouTube()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+    <div class="divider">YouTube</div>
+    <div class="yt-status disconnected" id="yt-status">▶️ YouTube no conectado</div>
+    <button class="btn-google" onclick="connectYouTube()">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
       Conectar YouTube
     </button>
   </div>
@@ -99,109 +102,48 @@
   <div class="app-header">
     <h2>Comentarios</h2>
     <div class="header-right">
-      <span class="yt-badge">▶ YouTube</span>
       <span class="badge-count" id="pending-count">cargando...</span>
       <button class="btn-logout" onclick="doLogout()">Salir</button>
     </div>
   </div>
   <div class="filter-bar">
-    <div class="filter-chip active" onclick="setFilter('pending', this)">Pendientes</div>
-    <div class="filter-chip" onclick="setFilter('answered', this)">Respondidos</div>
+    <div class="filter-chip active" onclick="setFilter('all',this)">Todos</div>
+    <div class="filter-chip" onclick="setFilter('answered',this)">✓ Respondidos</div>
   </div>
-  <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando comentarios...</div></div>
+  <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
+  <div id="load-more-container"></div>
   <div class="stats-bar">
     <div class="stat"><span class="stat-val" id="stat-pending">0</span><span class="stat-label">Pendientes</span></div>
-    <div class="stat"><span class="stat-val" id="stat-answered">0</span><span class="stat-label">Respondidos hoy</span></div>
+    <div class="stat"><span class="stat-val" id="stat-answered">0</span><span class="stat-label">Respondidos</span></div>
+    <div class="stat"><span class="stat-val" id="stat-total">0</span><span class="stat-label">Total</span></div>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const API='https://comentarios-backend-production.up.railway.app';
+const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
-let comments=[],answeredCount=0,currentFilter='pending',ytAuthenticated=false;
-async function init(){
-  const params=new URLSearchParams(window.location.search);
-  const code=params.get('code');
-  if(code){
-    document.getElementById('login-screen').style.display='none';
-    try{
-      const res=await fetch(`${API}/auth/callback`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({code})});
-      if(res.ok){window.history.replaceState({},'','/');ytAuthenticated=true;showApp();}
-    }catch(e){window.location.href='/';}
-    return;
-  }
-  try{
-    const res=await fetch(`${API}/auth/status`,{credentials:'include'});
-    const data=await res.json();
-    if(data.authenticated){ytAuthenticated=true;const u=sessionStorage.getItem('localUser');if(u)showApp();}
-  }catch(e){}
-}
-function doLogin(){
-  const u=document.getElementById('login-user').value.trim().toLowerCase();
-  const p=document.getElementById('login-pass').value;
-  const e=document.getElementById('login-error');
-  if(USERS[u]&&USERS[u]===p){e.style.display='none';sessionStorage.setItem('localUser',u);if(ytAuthenticated)showApp();else showToast('Conectá YouTube también');}
-  else{e.style.display='block';document.getElementById('login-pass').value='';}
-}
-document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
-async function loginWithYouTube(){
-  try{const res=await fetch(`${API}/auth/url`);const data=await res.json();window.location.href=data.url;}
-  catch(e){showToast('Error al conectar');}
-}
-async function doLogout(){
-  sessionStorage.removeItem('localUser');
-  await fetch(`${API}/auth/logout`,{method:'POST',credentials:'include'});
-  document.getElementById('app').style.display='none';
-  document.getElementById('login-screen').style.display='flex';
-  ytAuthenticated=false;
-}
-function showApp(){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadComments();}
-async function loadComments(){
-  try{
-    const res=await fetch(`${API}/comments`,{credentials:'include'});
-    if(res.status===401){showToast('Sesión expirada');return;}
-    const data=await res.json();
-    comments=data.comments||[];
-    renderFeed();updateStats();
-  }catch(e){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error al cargar</div>';}
-}
-function setFilter(f,el){currentFilter=f;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
-function renderFeed(){
-  const feed=document.getElementById('feed');
-  const filtered=comments.filter(c=>currentFilter==='pending'?!c.answered:c.answered);
-  if(!filtered.length){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Todavía no respondiste ninguno':'Todo al día!'}</div>`;return;}
-  feed.innerHTML=filtered.map(c=>buildCard(c)).join('');
-}
-function buildCard(c){
-  const time=new Date(c.publishedAt).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  return `<div class="comment-card ${c.answered?'answered':''}" id="card-${c.id}">
-    <div class="card-top">
-      <img class="author-avatar" src="${c.avatar||''}" onerror="this.style.display='none'">
-      <div class="card-meta">
-        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="timestamp">${time}</span></div>
-        <div class="post-ref">▶ ${c.replyCount} respuestas · ${c.likes} likes</div>
-      </div>
-    </div>
-    <div class="comment-text">${esc(c.text)}</div>
-    ${c.answered?`<div class="answered-badge">Respondido</div>`:`<div class="reply-area"><textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3"></textarea><div class="reply-actions"><button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button><button class="btn-send" onclick="sendReply('${c.id}','${c.videoId}')">Publicar →</button></div></div>`}
-  </div>`;}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-async function sendReply(id,videoId){
-  const ta=document.getElementById(`reply-${id}`);
-  const text=ta?.value.trim();
-  if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
-  const btn=ta.parentElement.querySelector('.btn-send');
-  btn.disabled=true;btn.textContent='Publicando...';
-  try{
-    const res=await fetch(`${API}/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,videoId})});
-    if(res.ok){const c=comments.find(x=>x.id===id);if(c){c.answered=true;answeredCount++;}showToast('✓ Publicado en YouTube');renderFeed();updateStats();}
-    else{showToast('Error al publicar');btn.disabled=false;btn.textContent='Publicar →';}
-  }catch(e){showToast('Error de conexión');btn.disabled=false;btn.textContent='Publicar →';}
-}
+let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,ytConnected=false,videoTitles={};
+
+async function checkYTStatus(){try{const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include'});const d=await r.json();ytConnected=d.authenticated;updateYTStatus();}catch(e){ytConnected=false;updateYTStatus();}}
+function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
+async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
+function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadComments();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
+function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+async function loadComments(pageToken=null){if(!ytConnected){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">▶️</span>Conectá YouTube primero</div>';return;}if(!pageToken){document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';comments=[];}try{const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include'});if(r.status===401){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🔐</span>Sesión expirada. Reconectá YouTube.</div>';return;}const data=await r.json();const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));comments=pageToken?[...comments,...nc]:nc;nextPageToken=data.nextPageToken;loadVideoTitles(nc);renderFeed();updateStats();}catch(e){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">❌</span>Error al cargar</div>';}}
+async function loadVideoTitles(cs){const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];for(const id of ids){if(videoTitles[id])continue;try{const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include'});const d=await r.json();videoTitles[id]=d.title;}catch(e){}}renderFeed();}
+function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
+function renderFeed(){const feed=document.getElementById('feed');let f=comments.filter(c=>currentFilter==='all'?!c.answered:c.answered);if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}document.getElementById('load-more-container').innerHTML=nextPageToken?`<button class="load-more" onclick="loadComments('${nextPageToken}')">Cargar más</button>`:'`';}
+function buildCard(c){const t=formatTime(c.publishedAt);const v=videoTitles[c.videoId]||'YouTube';return `<div class="comment-card ${c.answered?'answered':''}" id="card-${c.id}"><div class="card-top"><img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'"><div class="card-meta"><div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label">YouTube</span><span class="timestamp">${t}</span></div><div class="post-ref">${esc(v)}</div></div></div><div class="comment-text">${esc(c.text)}</div>${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''} ${c.answered?`<div class="answered-badge">Respondido</div>`:`<div class="reply-area"><textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3"></textarea><div class="reply-actions"><button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button><button class="btn-send" onclick="sendReply('${c.id}')">Publicar →</button></div></div>`}</div>`;}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return `hace ${m}m`;const h=Math.floor(m/60);if(h<24)return `hace ${h}h`;return `hace ${Math.floor(h/24)}d`;}
+async function sendReply(id){const ta=document.getElementById(`reply-${id}`);const text=ta?ta.value.trim():'';if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}const btn=document.querySelector(`#card-${id} .btn-send`);if(btn){btn.disabled=true;btn.textContent='Publicando...';}try{const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text})});if(r.ok){const c=comments.find(x=>x.id===id);if(c){c.answered=true;answeredIds.push(id);localStorage.setItem('answeredIds',JSON.stringify(answeredIds));}showToast('✓ Publicado en YouTube');renderFeed();updateStats();}else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}}catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}}
 function skipComment(id){const c=comments.find(x=>x.id===id);if(c){comments=comments.filter(x=>x.id!==id);comments.push(c);renderFeed();}}
-function updateStats(){const p=comments.filter(c=>!c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=answeredCount;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
+function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-init();
+checkYTStatus();
+const params=new URLSearchParams(window.location.search);
+if(params.get('auth')==='success'){ytConnected=true;updateYTStatus();showToast('✓ YouTube conectado!');history.replaceState({},'','/');}
 </script>
 </body>
 </html>
