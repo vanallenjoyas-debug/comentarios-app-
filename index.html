@@ -47,12 +47,14 @@
   .comment-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; animation: slideIn 0.2s ease; }
   @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .comment-card.answered { border-color: #2a3a2a; opacity: 0.6; }
+  .comment-card.fb { border-left: 3px solid #1877f2; }
   .card-top { padding: 14px 14px 10px; display: flex; align-items: flex-start; gap: 10px; }
   .author-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
   .card-meta { flex: 1; min-width: 0; }
   .card-meta-top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
   .username { font-weight: 600; font-size: 14px; }
   .network-label { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .network-label.fb { color: #1877f2; }
   .timestamp { font-size: 11px; color: var(--text3); margin-left: auto; }
   .post-ref { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .comment-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--border); }
@@ -109,6 +111,8 @@
   </div>
   <div class="filter-bar">
     <div class="filter-chip active" onclick="setFilter('all',this)">Todos</div>
+    <div class="filter-chip" onclick="setFilter('yt',this)">▶️ YouTube</div>
+    <div class="filter-chip" onclick="setFilter('fb',this)">📘 Facebook</div>
     <div class="filter-chip" onclick="setFilter('answered',this)">✓ Respondidos</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
@@ -123,7 +127,7 @@
 <script>
 const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
-let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,ytConnected=false,videoTitles={};
+let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
 const suggestions={};
 const suggestingNow=new Set();
 let observer=null;
@@ -131,9 +135,47 @@ let observer=null;
 async function checkYTStatus(){try{const token=localStorage.getItem('yt_token');if(!token){ytConnected=false;updateYTStatus();return;}const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();ytConnected=d.authenticated;updateYTStatus();}catch(e){ytConnected=false;updateYTStatus();}}
 function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
 async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
-function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadComments();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
+function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadAll();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
 function doLogout(){document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+
+async function loadAll(){
+  comments=[];
+  document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
+  await Promise.all([loadYTComments(), loadFBComments()]);
+  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+  renderFeed();
+  updateStats();
+}
+
+async function loadYTComments(pageToken=null){
+  if(!ytConnected)return;
+  try{
+    const token=localStorage.getItem('yt_token');
+    const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    if(r.status===401)return;
+    const data=await r.json();
+    const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
+    comments=pageToken?[...comments,...nc]:[...comments.filter(c=>c.network!=='yt'),...nc];
+    nextPageToken=data.nextPageToken;
+    loadVideoTitles(nc);
+  }catch(e){console.error('YT load error',e);}
+}
+
+async function loadFBComments(cursor=null){
+  try{
+    const r=await fetch(`${BACKEND}/fb/comments${cursor?'?after='+cursor:''}`,{credentials:'include'});
+    if(!r.ok)return;
+    const data=await r.json();
+    const nc=data.comments.map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    comments=cursor?[...comments,...nc]:[...comments.filter(c=>c.network!=='fb'),...nc];
+    fbNextCursor=data.nextCursor;
+  }catch(e){console.error('FB load error',e);}
+}
+
+async function loadVideoTitles(cs){const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];for(const id of ids){if(videoTitles[id])continue;try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();videoTitles[id]=d.title;}catch(e){}}renderFeed();}
+
+function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
 
 async function fetchSuggestion(id,text){
   if(suggestions[id]||suggestingNow.has(id))return;
@@ -168,45 +210,40 @@ function setupObserver(){
   document.querySelectorAll('.comment-card[data-comment-id]').forEach(el=>observer.observe(el));
 }
 
-async function loadComments(pageToken=null){
-  if(!ytConnected){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">▶️</span>Conectá YouTube primero</div>';return;}
-  if(!pageToken){document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';comments=[];}
-  try{
-    const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
-    if(r.status===401){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🔐</span>Sesión expirada. Reconectá YouTube.</div>';return;}
-    const data=await r.json();
-    const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
-    comments=pageToken?[...comments,...nc]:nc;
-    nextPageToken=data.nextPageToken;
-    loadVideoTitles(nc);
-    renderFeed();
-    updateStats();
-  }catch(e){document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">❌</span>Error al cargar</div>';}
-}
-
-async function loadVideoTitles(cs){const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];for(const id of ids){if(videoTitles[id])continue;try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();videoTitles[id]=d.title;}catch(e){}}renderFeed();}
-function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
-
 function renderFeed(){
   const feed=document.getElementById('feed');
-  let f=comments.filter(c=>currentFilter==='all'?!c.answered:c.answered);
+  let f=comments.filter(c=>{
+    if(currentFilter==='answered')return c.answered;
+    if(currentFilter==='yt')return !c.answered&&c.network==='yt';
+    if(currentFilter==='fb')return !c.answered&&c.network==='fb';
+    return !c.answered;
+  });
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
-  document.getElementById('load-more-container').innerHTML=nextPageToken?`<button class="load-more" onclick="loadComments('${nextPageToken}')">Cargar más</button>`:'';
+  
+  let loadMoreHTML='';
+  if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube</button>`;}
+  if(fbNextCursor&&(currentFilter==='all'||currentFilter==='fb')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook</button>`;}
+  document.getElementById('load-more-container').innerHTML=loadMoreHTML;
+  
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById(`reply-${c.id}`);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
 
+async function loadMoreYT(){await loadYTComments(nextPageToken);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
+async function loadMoreFB(){await loadFBComments(fbNextCursor);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
+
 function buildCard(c){
   const t=formatTime(c.publishedAt);
-  const v=videoTitles[c.videoId]||'YouTube';
-  return `<div class="comment-card ${c.answered?'answered':''}" id="card-${c.id}" data-comment-id="${c.id}">
+  const isFB=c.network==='fb';
+  const ref=isFB?(c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook'):(videoTitles[c.videoId]||'YouTube');
+  const networkLabel=isFB?'Facebook':'YouTube';
+  return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
       <div class="card-meta">
-        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label">YouTube</span><span class="timestamp">${t}</span></div>
-        <div class="post-ref">${esc(v)}</div>
+        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
+        <div class="post-ref">${esc(ref)}</div>
       </div>
     </div>
     <div class="comment-text">${esc(c.text)}</div>
@@ -216,7 +253,7 @@ function buildCard(c){
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
         <div class="reply-actions">
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
-          <button class="btn-send" onclick="sendReply('${c.id}')">Publicar →</button>
+          <button class="btn-send" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button>
         </div>
       </div>`}
   </div>`;
@@ -225,7 +262,7 @@ function buildCard(c){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return `hace ${m}m`;const h=Math.floor(m/60);if(h<24)return `hace ${h}h`;return `hace ${Math.floor(h/24)}d`;}
 
-async function sendReply(id){
+async function sendReply(id, network){
   const ta=document.getElementById(`reply-${id}`);
   const text=ta?ta.value.trim():'';
   if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
@@ -233,11 +270,14 @@ async function sendReply(id){
   if(btn){btn.disabled=true;btn.textContent='Publicando...';}
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json',...(token?{'X-YT-Token':token}:{})},credentials:'include',body:JSON.stringify({text})});
+    const endpoint=network==='fb'?`${BACKEND}/fb/comments/${id}/reply`:`${BACKEND}/comments/${id}/reply`;
+    const headers={'Content-Type':'application/json'};
+    if(network==='yt'&&token)headers['X-YT-Token']=token;
+    const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text})});
     if(r.ok){
       const c=comments.find(x=>x.id===id);
       if(c){c.answered=true;answeredIds.push(id);localStorage.setItem('answeredIds',JSON.stringify(answeredIds));}
-      showToast('✓ Publicado en YouTube');renderFeed();updateStats();
+      showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);renderFeed();updateStats();
     }else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
   }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
 }
