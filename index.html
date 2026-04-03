@@ -377,8 +377,15 @@ async function sendReply(id,network){
 
 function skipComment(id){
   delete suggestions[id];
+  suggestingNow.delete(id);
   const c=comments.find(x=>x.id===id);
-  if(c){comments=comments.filter(x=>x.id!==id);comments.push(c);renderFeed();}
+  if(c){
+    comments=comments.filter(x=>x.id!==id);
+    comments.push(c);
+    renderFeed();
+    // Generar nueva sugerencia inmediatamente
+    setTimeout(()=>fetchSuggestion(id,c.text), 100);
+  }
 }
 
 function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
