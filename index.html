@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -32,14 +31,22 @@
   .yt-status { font-size: 12px; text-align: center; padding: 8px; border-radius: var(--radius-sm); }
   .yt-status.connected { color: var(--green); background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); }
   .yt-status.disconnected { color: var(--text3); background: var(--surface2); border: 1px solid var(--border); }
+  .login-accounts { display: flex; flex-direction: column; gap: 6px; }
+  .login-account-row { display: flex; align-items: center; gap: 8px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; font-family: 'DM Mono', monospace; }
+  .login-account-row.yt { border-color: #ff000044; color: #ff6666; }
+  .login-account-row.fb { border-color: #1877f244; color: #5599ff; }
+  .login-account-row .check { color: var(--green); margin-left: auto; }
+  .login-account-row .warn { color: var(--red); margin-left: auto; font-size: 11px; }
   #app { display: none; flex-direction: column; min-height: 100vh; }
   .app-header { position: sticky; top: 0; z-index: 100; background: var(--bg); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; flex-direction: column; gap: 6px; }
   .app-header-top { display: flex; align-items: center; justify-content: space-between; }
   .app-header h2 { font-size: 17px; font-weight: 600; color: var(--accent); }
-  .connected-accounts { display: flex; gap: 10px; flex-wrap: wrap; }
-  .account-badge { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 11px; color: var(--text2); font-family: 'DM Mono', monospace; }
+  .connected-accounts { display: flex; gap: 8px; flex-wrap: wrap; }
+  .account-badge { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 11px; font-family: 'DM Mono', monospace; }
   .account-badge.yt { border-color: #ff0000; color: #ff6666; }
   .account-badge.fb { border-color: #1877f2; color: #5599ff; }
+  .account-badge .check { color: var(--green); font-size: 12px; margin-left: 2px; }
+  .account-badge .warn { color: var(--red); font-size: 11px; margin-left: 2px; }
   .header-right { display: flex; align-items: center; gap: 12px; }
   .badge-count { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12px; color: var(--text2); font-family: 'DM Mono', monospace; }
   .btn-logout { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
@@ -63,6 +70,8 @@
   .network-label.fb { color: #1877f2; }
   .timestamp { font-size: 11px; color: var(--text3); margin-left: auto; }
   .post-ref { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .post-ref a { color: var(--accent2); text-decoration: none; }
+  .post-ref a:hover { text-decoration: underline; }
   .comment-text { padding: 0 14px 12px; font-size: 14px; line-height: 1.5; border-bottom: 1px solid var(--border); }
   .comment-likes { padding: 6px 14px; font-size: 12px; color: var(--text3); border-bottom: 1px solid var(--border); }
   .reply-area { padding: 12px 14px; }
@@ -99,7 +108,19 @@
     <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn-primary" onclick="doLogin()">Entrar</button>
     <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
-    <div class="divider">YouTube</div>
+    <div class="divider">Cuentas conectadas</div>
+    <div class="login-accounts">
+      <div class="login-account-row yt">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
+        <span id="login-yt-handle">cargando...</span>
+        <span id="login-yt-check"></span>
+      </div>
+      <div class="login-account-row fb">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        <span>@javier.vanallen</span>
+        <span class="check">✓</span>
+      </div>
+    </div>
     <div class="yt-status disconnected" id="yt-status">▶️ YouTube no conectado</div>
     <button class="btn-google" onclick="connectYouTube()">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
@@ -136,41 +157,55 @@
 <script>
 const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
+const CORRECT_YT_HANDLE='@vanallenjoyas';
 let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
 const suggestions={};
 const suggestingNow=new Set();
 let observer=null;
 
+const YT_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>`;
+const FB_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+
 async function checkYTStatus(){
   try{
     const token=localStorage.getItem('yt_token');
-    if(!token){ytConnected=false;updateYTStatus();return;}
-    const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    if(!token){ytConnected=false;updateYTStatus();updateAccountDisplays(null,null);return;}
+    const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();
     ytConnected=d.authenticated;
     updateYTStatus();
     if(ytConnected) loadChannelInfo();
-  }catch(e){ytConnected=false;updateYTStatus();}
+    else updateAccountDisplays(null,null);
+  }catch(e){ytConnected=false;updateYTStatus();updateAccountDisplays(null,null);}
 }
 
 async function loadChannelInfo(){
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND}/auth/channel`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/auth/channel`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();
-    updateConnectedAccounts(d.name, d.handle);
-  }catch(e){}
+    updateAccountDisplays(d.name,d.handle);
+  }catch(e){updateAccountDisplays(null,null);}
 }
 
-function updateConnectedAccounts(ytName, ytHandle){
+function updateAccountDisplays(ytName,ytHandle){
+  const display=ytHandle||ytName||'no conectado';
+  const isCorrect=ytHandle&&ytHandle.toLowerCase()===CORRECT_YT_HANDLE.toLowerCase();
+  const indicator=ytHandle?(isCorrect?'<span class="check">✓</span>':'<span class="warn">⚠ cuenta incorrecta</span>'):'';
+
+  // Login screen
+  const loginHandle=document.getElementById('login-yt-handle');
+  const loginCheck=document.getElementById('login-yt-check');
+  if(loginHandle)loginHandle.textContent=display;
+  if(loginCheck)loginCheck.innerHTML=indicator;
+
+  // App header
   const el=document.getElementById('connected-accounts');
-  let html='';
-  if(ytName){
-    const display = ytHandle ? ytHandle : ytName;
-    html+=`<span class="account-badge yt">▶️ ${display}</span>`;
-  }
-  html+=`<span class="account-badge fb">📘 Javier.vanallen</span>`;
-  el.innerHTML=html;
+  if(!el)return;
+  el.innerHTML=`
+    <span class="account-badge yt">${YT_ICON} ${display}${indicator}</span>
+    <span class="account-badge fb">${FB_ICON} @javier.vanallen<span class="check">✓</span></span>
+  `;
 }
 
 function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
@@ -182,7 +217,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 async function loadAll(){
   comments=[];
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-  await Promise.all([loadYTComments(), loadFBComments()]);
+  await Promise.all([loadYTComments(),loadFBComments()]);
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   renderFeed();
   updateStats();
@@ -213,7 +248,20 @@ async function loadFBComments(cursor=null){
   }catch(e){console.error('FB load error',e);}
 }
 
-async function loadVideoTitles(cs){const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];for(const id of ids){if(videoTitles[id])continue;try{const token=localStorage.getItem('yt_token');const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});const d=await r.json();videoTitles[id]=d.title;}catch(e){}}renderFeed();}
+async function loadVideoTitles(cs){
+  const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];
+  for(const id of ids){
+    if(videoTitles[id])continue;
+    try{
+      const token=localStorage.getItem('yt_token');
+      const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+      const d=await r.json();
+      videoTitles[id]=d.title;
+    }catch(e){}
+  }
+  renderFeed();
+}
+
 function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
 
 async function fetchSuggestion(id,text){
@@ -259,12 +307,10 @@ function renderFeed(){
   });
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
-
   let loadMoreHTML='';
   if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube</button>`;}
   if(fbNextCursor&&(currentFilter==='all'||currentFilter==='fb')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
-
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById(`reply-${c.id}`);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
@@ -275,14 +321,22 @@ async function loadMoreFB(){await loadFBComments(fbNextCursor);comments.sort((a,
 function buildCard(c){
   const t=formatTime(c.publishedAt);
   const isFB=c.network==='fb';
-  const ref=isFB?(c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook'):(videoTitles[c.videoId]||'YouTube');
   const networkLabel=isFB?'Facebook':'YouTube';
+  let refHTML='';
+  if(isFB){
+    const msg=c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook';
+    refHTML=esc(msg);
+  } else {
+    const title=videoTitles[c.videoId]||'YouTube';
+    const url=c.videoId?`https://www.youtube.com/watch?v=${c.videoId}`:'#';
+    refHTML=`<a href="${url}" target="_blank" rel="noopener">${esc(title)}</a>`;
+  }
   return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
       <div class="card-meta">
         <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
-        <div class="post-ref">${esc(ref)}</div>
+        <div class="post-ref">${refHTML}</div>
       </div>
     </div>
     <div class="comment-text">${esc(c.text)}</div>
@@ -301,7 +355,7 @@ function buildCard(c){
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return `hace ${m}m`;const h=Math.floor(m/60);if(h<24)return `hace ${h}h`;return `hace ${Math.floor(h/24)}d`;}
 
-async function sendReply(id, network){
+async function sendReply(id,network){
   const ta=document.getElementById(`reply-${id}`);
   const text=ta?ta.value.trim():'';
   if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
