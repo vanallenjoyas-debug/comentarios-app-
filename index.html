@@ -342,8 +342,8 @@ function buildCard(c){
     const url=c.videoId?`https://www.youtube.com/watch?v=${c.videoId}`:'#';
     refHTML=`<a href="${url}" target="_blank" rel="noopener">${esc(title)}</a>`;
   }
-  const emojiBtns=["🔥","😄","🙌","🤘","🙏","💪","🤷","💵","😂","👍"].map(e=>`<button class="quick-reply emoji-btn" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join("");
-  const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join("");
+  const emojiBtns=["🔥","😄","🙌","🤘","🙏","💪","🤷","💵","😂","👍"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
+  const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join('');
   return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
@@ -393,15 +393,19 @@ async function sendReply(id,network){
 
 function discardComment(id){
   delete suggestions[id];
-  discardedIds.push(id);fetch(`${BACKEND}/state/discarded`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).catch(()=>{});comments=comments.filter(x=>x.id!==id);
-  renderFeed();updateStats();
+  discardedIds.push(id);
+  fetch(`${BACKEND}/state/discarded`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+  comments=comments.filter(x=>x.id!==id);
+  renderFeed();
+  updateStats();
 }
+
 function skipComment(id){
   delete suggestions[id];
   suggestingNow.delete(id);
   const c=comments.find(x=>x.id===id);
   if(c){
-    discardedIds.push(id);fetch(`${BACKEND}/state/discarded`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).catch(()=>{});comments=comments.filter(x=>x.id!==id);
+    comments=comments.filter(x=>x.id!==id);
     comments.push(c);
     renderFeed();
     setTimeout(()=>fetchSuggestion(id,c.text),100);
