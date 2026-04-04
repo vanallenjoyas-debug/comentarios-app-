@@ -181,6 +181,7 @@ const YT_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><p
 const FB_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
 
 function setQuickReply(id,text){const ta=document.getElementById('reply-'+id);if(ta){ta.value=text;ta.dataset.edited='1';ta.focus();}}
+function appendEmoji(id,emoji){const ta=document.getElementById('reply-'+id);if(ta){ta.value=(ta.value||'')+emoji;ta.dataset.edited='1';ta.focus();}}
 
 async function checkYTStatus(){
   try{
@@ -340,7 +341,8 @@ function buildCard(c){
     const url=c.videoId?`https://www.youtube.com/watch?v=${c.videoId}`:'#';
     refHTML=`<a href="${url}" target="_blank" rel="noopener">${esc(title)}</a>`;
   }
-  const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join('');
+  const emojiBtns=["🔥","😄","🙌","🤘","🙏","💪","🤷","💵","😂","👍"].map(e=>`<button class="quick-reply emoji-btn" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join("");
+  const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join("");
   return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
@@ -354,6 +356,7 @@ function buildCard(c){
     ${c.answered?`<div class="answered-badge">Respondido</div>`:`
       <div class="reply-area">
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
+        <div class="quick-replies">${emojiBtns}</div>
         <div class="quick-replies">${quickBtns}</div>
         <div class="reply-actions">
           <button class="btn-skip" onclick="discardComment('${c.id}')">Descartar</button>
@@ -415,3 +418,4 @@ if(params.get('auth')==='success'){const token=params.get('token');if(token){loc
 </script>
 </body>
 </html>
+
