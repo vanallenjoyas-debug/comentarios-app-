@@ -241,7 +241,7 @@ async function loadYTComments(pageToken=null){
     const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     if(r.status===401)return;
     const data=await r.json();
-    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,network:'yt',answered:c.answeredByMe||answeredIds.includes(c.id)}));
     comments=pageToken?[...comments,...nc]:[...comments.filter(c=>c.network!=='yt'),...nc];
     nextPageToken=data.nextPageToken;
     loadVideoTitles(nc);
