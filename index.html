@@ -83,6 +83,9 @@
   .emoji-bar { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid var(--border); }
   .emoji-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; font-size: 15px; cursor: pointer; line-height: 1; transition: background 0.15s; }
   .emoji-btn:hover { background: var(--border); }
+  .quick-replies { display: flex; flex-direction: column; gap: 5px; margin-top: 8px; }
+  .quick-reply-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 7px 10px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; text-align: left; transition: border-color 0.15s, color 0.15s; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+  .quick-reply-btn:hover { border-color: var(--accent2); color: var(--text); }
   .reply-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
   .btn-discard { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 14px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; transition: color 0.15s, border-color 0.15s; }
   .btn-discard:hover { color: var(--red); border-color: var(--red); }
@@ -289,6 +292,7 @@ async function loadFBComments(cursor=null){
 
 async function loadVideoTitles(cs){
   const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];
+  let loaded=0;
   for(const id of ids){
     if(videoTitles[id])continue;
     try{
@@ -296,9 +300,10 @@ async function loadVideoTitles(cs){
       const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
       const d=await r.json();
       videoTitles[id]=d.title;
+      loaded++;
     }catch(e){}
   }
-  renderFeed();
+  if(loaded>0)renderFeed();
 }
 
 function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
@@ -363,6 +368,25 @@ function renderFeed(){
 async function loadMoreYT(){await loadYTComments(nextPageToken);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
 async function loadMoreFB(){await loadFBComments(fbNextCursor);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
 
+const QUICK_REPLIES=[
+  'no me copió, yo hablo así 😄',
+  'disculpa pero no te entiendo 🤷',
+  'en tu localidad seguro venden 🔧',
+  'aunque no parezca hacer esto es mucho más rentable de lo que parece 💪'
+];
+
+function buildQuickReplies(id){
+  return `<div class="quick-replies">${QUICK_REPLIES.map(r=>`<button class="quick-reply-btn" onclick="setQuickReply('${id}',this)">${r}</button>`).join('')}</div>`;
+}
+
+function setQuickReply(id,btn){
+  const ta=document.getElementById(`reply-${id}`);
+  if(!ta)return;
+  ta.value=btn.textContent;
+  ta.dataset.edited='1';
+  ta.focus();
+}
+
 function buildEmojiBar(id){
   return `<div class="emoji-bar">${EMOJI_LIST.map(e=>`<button class="emoji-btn" onclick="insertEmoji('${id}','${e}')">${e}</button>`).join('')}</div>`;
 }
@@ -401,6 +425,7 @@ function buildCard(c){
       <div class="reply-area">
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
         ${buildEmojiBar(c.id)}
+        ${buildQuickReplies(c.id)}
         <div class="reply-actions">
           <button class="btn-discard" onclick="discardComment('${c.id}')">Descartar</button>
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
@@ -483,17 +508,27 @@ function updateStats(){
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 // Init
-checkYTStatus();
-const params=new URLSearchParams(window.location.search);
-if(params.get('auth')==='success'){
-  const token=params.get('token');
-  if(token)localStorage.setItem('yt_token',token);
-  ytConnected=true;
-  updateYTStatus();
-  showToast('✓ YouTube conectado!');
-  history.replaceState({},'','/');
+async function init(){
+  const params=new URLSearchParams(window.location.search);
+  if(params.get('auth')==='success'){
+    const token=params.get('token');
+    if(token)localStorage.setItem('yt_token',token);
+    ytConnected=true;
+    updateYTStatus();
+    showToast('✓ YouTube conectado!');
+    history.replaceState({},'','/');
+  }
+  // Primero verificar YT, después decidir si mostrar app o login
+  await checkYTStatus();
+  const saved=localStorage.getItem('app_logged_user');
+  if(saved&&USERS[saved]){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('app').style.display='flex';
+    loadAll();
+  }
 }
-checkSavedLogin();
+init();
 </script>
 </body>
 </html>
+
