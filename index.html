@@ -172,7 +172,7 @@ const QUICK_REPLIES=[
   'en tu localidad seguro venden 🔧',
   'aunque no parezca hacer esto es mucho mas rentable de lo que parece 💪',
 ];
-let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),discardedIds=JSON.parse(localStorage.getItem('discardedIds')||'[]'),nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
+let currentFilter='all',comments=[],answeredIds=[],discardedIds=[],nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
 const suggestions={};
 const suggestingNow=new Set();
 let observer=null;
@@ -225,6 +225,7 @@ function doLogout(){document.getElementById('app').style.display='none';document
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 
 async function loadAll(){
+  try{const sr=await fetch(`${BACKEND}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
   await Promise.all([loadYTComments(),loadFBComments()]);
@@ -384,7 +385,7 @@ async function sendReply(id,network){
     const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text})});
     if(r.ok){
       const c=comments.find(x=>x.id===id);
-      if(c){c.answered=true;answeredIds.push(id);localStorage.setItem('answeredIds',JSON.stringify(answeredIds));}
+      if(c){c.answered=true;answeredIds.push(id);fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});}
       showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);renderFeed();updateStats();
     }else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
   }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
@@ -392,9 +393,7 @@ async function sendReply(id,network){
 
 function discardComment(id){
   delete suggestions[id];
-  const discarded=JSON.parse(localStorage.getItem('discardedIds')||'[]');
-  if(!discarded.includes(id)){discarded.push(id);localStorage.setItem('discardedIds',JSON.stringify(discarded));}
-  comments=comments.filter(x=>x.id!==id);
+  discardedIds.push(id);fetch(`${BACKEND}/state/discarded`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).catch(()=>{});comments=comments.filter(x=>x.id!==id);
   renderFeed();updateStats();
 }
 function skipComment(id){
@@ -402,7 +401,7 @@ function skipComment(id){
   suggestingNow.delete(id);
   const c=comments.find(x=>x.id===id);
   if(c){
-    comments=comments.filter(x=>x.id!==id);
+    discardedIds.push(id);fetch(`${BACKEND}/state/discarded`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})}).catch(()=>{});comments=comments.filter(x=>x.id!==id);
     comments.push(c);
     renderFeed();
     setTimeout(()=>fetchSuggestion(id,c.text),100);
