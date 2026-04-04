@@ -172,7 +172,7 @@ const QUICK_REPLIES=[
   'en tu localidad seguro venden 🔧',
   'aunque no parezca hacer esto es mucho mas rentable de lo que parece 💪',
 ];
-let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
+let currentFilter='all',comments=[],answeredIds=JSON.parse(localStorage.getItem('answeredIds')||'[]'),discardedIds=JSON.parse(localStorage.getItem('discardedIds')||'[]'),nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
 const suggestions={};
 const suggestingNow=new Set();
 let observer=null;
@@ -239,7 +239,7 @@ async function loadYTComments(pageToken=null){
     const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     if(r.status===401)return;
     const data=await r.json();
-    const nc=data.comments.map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,network:'yt',answered:answeredIds.includes(c.id)}));
     comments=pageToken?[...comments,...nc]:[...comments.filter(c=>c.network!=='yt'),...nc];
     nextPageToken=data.nextPageToken;
     loadVideoTitles(nc);
@@ -251,7 +251,7 @@ async function loadFBComments(cursor=null){
     const r=await fetch(`${BACKEND}/fb/comments${cursor?'?after='+cursor:''}`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
-    const nc=data.comments.map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
     comments=cursor?[...comments,...nc]:[...comments.filter(c=>c.network!=='fb'),...nc];
     fbNextCursor=data.nextCursor;
   }catch(e){console.error('FB load error',e);}
@@ -356,6 +356,7 @@ function buildCard(c){
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
         <div class="quick-replies">${quickBtns}</div>
         <div class="reply-actions">
+          <button class="btn-skip" onclick="discardComment('${c.id}')">Descartar</button>
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
           <button class="btn-send" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button>
         </div>
@@ -386,6 +387,13 @@ async function sendReply(id,network){
   }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
 }
 
+function discardComment(id){
+  delete suggestions[id];
+  const discarded=JSON.parse(localStorage.getItem('discardedIds')||'[]');
+  if(!discarded.includes(id)){discarded.push(id);localStorage.setItem('discardedIds',JSON.stringify(discarded));}
+  comments=comments.filter(x=>x.id!==id);
+  renderFeed();updateStats();
+}
 function skipComment(id){
   delete suggestions[id];
   suggestingNow.delete(id);
@@ -407,4 +415,3 @@ if(params.get('auth')==='success'){const token=params.get('token');if(token){loc
 </script>
 </body>
 </html>
-
