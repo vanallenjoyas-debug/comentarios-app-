@@ -406,7 +406,10 @@ async function sendReply(id,network){
     const endpoint=network==='fb'?`${BACKEND}/fb/comments/${id}/reply`:`${BACKEND}/comments/${id}/reply`;
     const headers={'Content-Type':'application/json'};
     if(network==='yt'&&token)headers['X-YT-Token']=token;
-    const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text, commentText: document.querySelector('#card-'+id+' .comment-text')?.textContent||''})});
+    const c=currentFilter==='videos'?currentVideoComments.find(x=>x.id===id):comments.find(x=>x.id===id);
+    const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
+    const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
+    const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text, commentText, videoTitle})});
     if(r.ok){
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
@@ -556,4 +559,5 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 </script>
 </body>
 </html>
+
 
