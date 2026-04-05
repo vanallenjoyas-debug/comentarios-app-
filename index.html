@@ -545,7 +545,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 (async()=>{
   const params=new URLSearchParams(window.location.search);
   if(params.get("auth")==="success"){const token=params.get("token");if(token){localStorage.setItem("yt_token",token);}history.replaceState({},"","/");}
-  await checkYTStatus();
+  await Promise.race([checkYTStatus(), new Promise(r=>setTimeout(r,3000))]);
   if(params.get("auth")==="success"){ytConnected=true;updateYTStatus();showToast("✓ YouTube conectado!");}
   if(localStorage.getItem("loggedIn")==="1"){
     document.getElementById("login-screen").style.display="none";
@@ -553,3 +553,4 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
     loadAll();
   }
 })();
+
