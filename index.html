@@ -366,7 +366,7 @@ function buildCard(c){
     const url=c.videoId?`https://www.youtube.com/watch?v=${c.videoId}`:'#';
     refHTML=`<a href="${url}" target="_blank" rel="noopener">${esc(title)}</a>`;
   }
-  const emojiBtns=["🔥","😄","🙌","🤘","🙏","💪","🤷","💵","😂","👍"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
+  const emojiBtns=["🔥","😄","🙌","🙏","💪","🤷"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
   const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join('');
   return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
@@ -381,12 +381,12 @@ function buildCard(c){
     ${c.answered?`<div class="answered-badge">Respondido</div>`:`
       <div class="reply-area">
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
-        <div class="quick-replies">${emojiBtns}</div>
+        <div class="quick-replies">${emojiBtns}<button class="btn-send" style="margin-left:auto" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button></div>
         <div class="quick-replies">${quickBtns}</div>
         <div class="reply-actions">
           <button class="btn-skip" onclick="discardComment('${c.id}')">Descartar</button>
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
-          <button class="btn-send" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button>
+        </div>
         </div>
       </div>`}
   </div>`;
