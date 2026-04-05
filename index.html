@@ -541,14 +541,15 @@ async function nextVideo(){
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-checkYTStatus();
-if(localStorage.getItem('loggedIn')==='1'){
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('app').style.display='flex';
-  loadAll();
-}
-const params=new URLSearchParams(window.location.search);
-if(params.get('auth')==='success'){const token=params.get('token');if(token){localStorage.setItem('yt_token',token);}ytConnected=true;updateYTStatus();showToast('✓ YouTube conectado!');history.replaceState({},'','/');}
-</script>
-</body>
-</html>
+
+(async()=>{
+  const params=new URLSearchParams(window.location.search);
+  if(params.get("auth")==="success"){const token=params.get("token");if(token){localStorage.setItem("yt_token",token);}history.replaceState({},"","/");}
+  await checkYTStatus();
+  if(params.get("auth")==="success"){ytConnected=true;updateYTStatus();showToast("✓ YouTube conectado!");}
+  if(localStorage.getItem("loggedIn")==="1"){
+    document.getElementById("login-screen").style.display="none";
+    document.getElementById("app").style.display="flex";
+    loadAll();
+  }
+})();
