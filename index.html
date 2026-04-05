@@ -147,6 +147,7 @@
     <div class="filter-chip" onclick="setFilter('yt',this)">▶️ YouTube</div>
     <div class="filter-chip" onclick="setFilter('fb',this)">📘 Facebook</div>
     <div class="filter-chip" onclick="setFilter('answered',this)">✓ Respondidos</div>
+    <div class="filter-chip" onclick="setFilter('videos',this)">🎬 Videos viejos</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -170,10 +171,6 @@ const QUICK_REPLIES=[
   'no me copio, yo hablo asi 😄',
   'disculpa pero no te entiendo 🤷',
   'en tu localidad seguro venden 🔧',
-  'Como? no entiendo... 🤷',
-  ' HIBRIDOOOOO 💪',
-  'Meh',
-  'El video largo lo tengo en mi perfil',
   'aunque no parezca hacer esto es mucho mas rentable de lo que parece 💪',
   'es buena idea, lo tomo para hacer un video en el futuro, gracias 👍',
 ];
@@ -278,7 +275,7 @@ async function loadVideoTitles(cs){
   renderFeed();
 }
 
-function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');renderFeed();}
+function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');if(net==='videos'){loadVideos();}else{renderFeed();}}
 
 async function fetchSuggestion(id,text){
   if(suggestions[id]||suggestingNow.has(id))return;
@@ -418,6 +415,77 @@ function skipComment(id){
 }
 
 function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
+
+// ─── Videos viejos ────────────────────────────────────────────────────────────
+let videosList=[], videosPageToken=null, currentVideoIndex=0, currentVideoComments=[], currentVideoPageToken=null;
+
+async function loadVideos(){
+  const feed=document.getElementById("feed");
+  feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando videos...</div>';
+  try{
+    const token=localStorage.getItem("yt_token");
+    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const data=await r.json();
+    videosList=data.videos||[];
+    videosPageToken=data.nextPageToken;
+    currentVideoIndex=0;
+    if(videosList.length>0) loadVideoComments(videosList[0].id, videosList[0].title);
+    else feed.innerHTML='<div class="empty-state"><span class="emoji">🎬</span>No hay videos</div>';
+  }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando videos</div>';}
+}
+
+async function loadVideoComments(videoId, videoTitle, pageToken=null){
+  const feed=document.getElementById("feed");
+  if(!pageToken) feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando comentarios de "${videoTitle}"...</div>`;
+  try{
+    const token=localStorage.getItem("yt_token");
+    const url=`${BACKEND}/video/${videoId}/comments${pageToken?"?pageToken="+pageToken:""}`;
+    const r=await fetch(url,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const data=await r.json();
+    if(!pageToken) currentVideoComments=[];
+    currentVideoComments=[...currentVideoComments,...(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id))];
+    currentVideoPageToken=data.nextPageToken;
+    videoTitles[videoId]=videoTitle;
+    renderVideoFeed(videoId, videoTitle);
+  }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando comentarios</div>';}
+}
+
+function renderVideoFeed(videoId, videoTitle){
+  const feed=document.getElementById("feed");
+  const pending=currentVideoComments.filter(c=>!c.answered);
+  let html=`<div style="padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:8px;"><span style="font-size:13px;color:var(--text2);">📹 <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:var(--accent2);text-decoration:none;">${esc(videoTitle)}</a></span><span style="font-size:12px;color:var(--text3);margin-left:8px;">${pending.length} pendientes</span></div>`;
+  if(pending.length===0){
+    html+='<div class="empty-state"><span class="emoji">✅</span>Todo respondido en este video</div>';
+  } else {
+    html+=pending.map(c=>buildCard(c)).join("");
+  }
+  let nav='<div style="display:flex;gap:8px;padding:12px 16px;">';
+  if(currentVideoPageToken) nav+=`<button class="load-more" onclick="loadVideoComments('${videoId}','${videoTitle.replace(/'/g,'\'')}','${currentVideoPageToken}')">Cargar más comentarios</button>`;
+  nav+=`<button class="load-more" onclick="nextVideo()">Siguiente video →</button>`;
+  nav+='</div>';
+  feed.innerHTML=html;
+  document.getElementById("load-more-container").innerHTML=nav;
+  pending.forEach(c=>{if(suggestions[c.id]){const ta=document.getElementById("reply-"+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
+  setupObserver();
+}
+
+async function nextVideo(){
+  currentVideoIndex++;
+  if(currentVideoIndex < videosList.length){
+    const v=videosList[currentVideoIndex];
+    await loadVideoComments(v.id, v.title);
+  } else if(videosPageToken){
+    const token=localStorage.getItem("yt_token");
+    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const data=await r.json();
+    videosList=[...videosList,...(data.videos||[])];
+    videosPageToken=data.nextPageToken;
+    const v=videosList[currentVideoIndex];
+    if(v) await loadVideoComments(v.id, v.title);
+  } else {
+    document.getElementById("feed").innerHTML='<div class="empty-state"><span class="emoji">🎉</span>Revisaste todos los videos!</div>';
+  }
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 checkYTStatus();
