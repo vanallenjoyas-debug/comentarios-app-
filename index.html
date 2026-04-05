@@ -98,6 +98,9 @@
   .loading { text-align: center; padding: 40px; color: var(--text3); }
   .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 12px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .video-header { padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .video-header a { color: var(--accent2); text-decoration: none; font-size: 13px; }
+  .video-header span { font-size: 12px; color: var(--text3); margin-left: 8px; }
 </style>
 </head>
 <body>
@@ -180,7 +183,13 @@ const QUICK_REPLIES=[
   'aunque no parezca hacer esto es mucho mas rentable de lo que parece 💪',
   'es buena idea, lo tomo para hacer un video en el futuro, gracias 👍',
 ];
-let currentFilter='all',comments=[],answeredIds=[],discardedIds=[],nextPageToken=null,fbNextCursor=null,ytConnected=false,videoTitles={};
+
+let currentFilter='all';
+let comments=[], answeredIds=[], discardedIds=[];
+let nextPageToken=null, fbNextCursor=null, ytConnected=false;
+let videoTitles={};
+let videosList=[], videosPageToken=null, currentVideoIndex=0;
+let currentVideoComments=[], currentVideoId='', currentVideoTitle='', currentVideoPageToken=null;
 const suggestions={};
 const suggestingNow=new Set();
 let observer=null;
@@ -199,7 +208,7 @@ async function checkYTStatus(){
     const d=await r.json();
     ytConnected=d.authenticated;
     updateYTStatus();
-    if(ytConnected) loadChannelInfo();
+    if(ytConnected)loadChannelInfo();
     else updateAccountDisplays(null,null);
   }catch(e){ytConnected=false;updateYTStatus();updateAccountDisplays(null,null);}
 }
@@ -228,8 +237,8 @@ function updateAccountDisplays(ytName,ytHandle){
 
 function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
 async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
-function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){localStorage.setItem("loggedIn","1");document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadAll();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
-function doLogout(){localStorage.removeItem("loggedIn");localStorage.removeItem('loggedIn');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
+function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){localStorage.setItem('loggedIn','1');document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadAll();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
+function doLogout(){localStorage.removeItem('loggedIn');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 
 async function loadAll(){
@@ -278,10 +287,16 @@ async function loadVideoTitles(cs){
       videoTitles[id]=d.title;
     }catch(e){}
   }
-  renderFeed();
+  if(currentFilter!=='videos')renderFeed();
 }
 
-function setFilter(net,el){currentFilter=net;document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');if(net==='videos'){loadVideos();}else{renderFeed();}}
+function setFilter(net,el){
+  currentFilter=net;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  if(net==='videos'){loadVideos();}
+  else{renderFeed();}
+}
 
 async function fetchSuggestion(id,text){
   if(suggestions[id]||suggestingNow.has(id))return;
@@ -304,11 +319,12 @@ async function fetchSuggestion(id,text){
 
 function setupObserver(){
   if(observer)observer.disconnect();
+  const pool=currentFilter==='videos'?currentVideoComments:comments;
   observer=new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
       if(entry.isIntersecting){
         const id=entry.target.dataset.commentId;
-        const c=comments.find(x=>x.id===id);
+        const c=pool.find(x=>x.id===id);
         if(c&&!c.answered)fetchSuggestion(id,c.text);
       }
     });
@@ -392,9 +408,20 @@ async function sendReply(id,network){
     if(network==='yt'&&token)headers['X-YT-Token']=token;
     const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text})});
     if(r.ok){
-      const c=comments.find(x=>x.id===id);
-      if(c){c.answered=true;answeredIds.push(id);fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});}
-      showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);renderFeed();updateStats();
+      answeredIds.push(id);
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+      if(currentFilter==='videos'){
+        // Modo videos: marcar en currentVideoComments y rerenderizar
+        const c=currentVideoComments.find(x=>x.id===id);
+        if(c)c.answered=true;
+        showToast('✓ Publicado en YouTube');
+        renderVideoFeed(currentVideoId,currentVideoTitle);
+      } else {
+        const c=comments.find(x=>x.id===id);
+        if(c)c.answered=true;
+        showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);
+        renderFeed();updateStats();
+      }
     }else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
   }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
 }
@@ -403,103 +430,121 @@ function discardComment(id){
   delete suggestions[id];
   discardedIds.push(id);
   fetch(`${BACKEND}/state/discarded`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
-  comments=comments.filter(x=>x.id!==id);
-  renderFeed();
-  updateStats();
+  if(currentFilter==='videos'){
+    currentVideoComments=currentVideoComments.filter(x=>x.id!==id);
+    renderVideoFeed(currentVideoId,currentVideoTitle);
+  } else {
+    comments=comments.filter(x=>x.id!==id);
+    renderFeed();updateStats();
+  }
 }
 
 function skipComment(id){
   delete suggestions[id];
   suggestingNow.delete(id);
-  const c=comments.find(x=>x.id===id);
-  if(c){
-    comments=comments.filter(x=>x.id!==id);
-    comments.push(c);
-    renderFeed();
-    setTimeout(()=>fetchSuggestion(id,c.text),100);
+  if(currentFilter==='videos'){
+    const c=currentVideoComments.find(x=>x.id===id);
+    if(c){
+      currentVideoComments=currentVideoComments.filter(x=>x.id!==id);
+      currentVideoComments.push(c);
+      renderVideoFeed(currentVideoId,currentVideoTitle);
+      setTimeout(()=>fetchSuggestion(id,c.text),100);
+    }
+  } else {
+    const c=comments.find(x=>x.id===id);
+    if(c){
+      comments=comments.filter(x=>x.id!==id);
+      comments.push(c);
+      renderFeed();
+      setTimeout(()=>fetchSuggestion(id,c.text),100);
+    }
   }
 }
 
 function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
 
 // ─── Videos viejos ────────────────────────────────────────────────────────────
-let videosList=[], videosPageToken=null, currentVideoIndex=0, currentVideoComments=[], currentVideoPageToken=null;
-
 async function loadVideos(){
-  const feed=document.getElementById("feed");
+  const feed=document.getElementById('feed');
+  document.getElementById('load-more-container').innerHTML='';
   feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando videos...</div>';
   try{
-    const token=localStorage.getItem("yt_token");
-    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const token=localStorage.getItem('yt_token');
+    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=data.videos||[];
     videosPageToken=data.nextPageToken;
     currentVideoIndex=0;
-    if(videosList.length>0) loadVideoComments(videosList[0].id, videosList[0].title);
+    if(videosList.length>0)loadVideoComments(videosList[0].id,videosList[0].title);
     else feed.innerHTML='<div class="empty-state"><span class="emoji">🎬</span>No hay videos</div>';
   }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando videos</div>';}
 }
 
-async function loadVideoComments(videoId, videoTitle, pageToken=null){
-  const feed=document.getElementById("feed");
-  if(!pageToken) feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando comentarios de "${videoTitle}"...</div>`;
+async function loadVideoComments(videoId,videoTitle,pageToken=null){
+  currentVideoId=videoId;
+  currentVideoTitle=videoTitle;
+  const feed=document.getElementById('feed');
+  if(!pageToken){
+    currentVideoComments=[];
+    feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando "${esc(videoTitle)}"...</div>`;
+  }
   try{
-    const token=localStorage.getItem("yt_token");
-    const url=`${BACKEND}/video/${videoId}/comments${pageToken?"?pageToken="+pageToken:""}`;
-    const r=await fetch(url,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const token=localStorage.getItem('yt_token');
+    const url=`${BACKEND}/video/${videoId}/comments${pageToken?'?pageToken='+pageToken:''}`;
+    const r=await fetch(url,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
-    if(!pageToken) currentVideoComments=[];
-    currentVideoComments=[...currentVideoComments,...(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id))];
-    comments=currentVideoComments;
+    const newComments=(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id));
+    currentVideoComments=[...currentVideoComments,...newComments];
     currentVideoPageToken=data.nextPageToken;
     videoTitles[videoId]=videoTitle;
-    renderVideoFeed(videoId, videoTitle);
+    renderVideoFeed(videoId,videoTitle);
   }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando comentarios</div>';}
 }
 
-function renderVideoFeed(videoId, videoTitle){
-  const feed=document.getElementById("feed");
+function renderVideoFeed(videoId,videoTitle){
+  const feed=document.getElementById('feed');
   const pending=currentVideoComments.filter(c=>!c.answered);
-  let html=`<div style="padding:12px 0;border-bottom:1px solid var(--border);margin-bottom:8px;"><span style="font-size:13px;color:var(--text2);">📹 <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" style="color:var(--accent2);text-decoration:none;">${esc(videoTitle)}</a></span><span style="font-size:12px;color:var(--text3);margin-left:8px;">${pending.length} pendientes</span></div>`;
+  let html=`<div class="video-header">📹 <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">${esc(videoTitle)}</a><span>${pending.length} pendientes</span></div>`;
   if(pending.length===0){
     html+='<div class="empty-state"><span class="emoji">✅</span>Todo respondido en este video</div>';
   } else {
-    html+=pending.map(c=>buildCard(c)).join("");
+    html+=pending.map(c=>buildCard(c)).join('');
   }
-  let nav='<div style="display:flex;gap:8px;padding:12px 16px;">';
-  if(currentVideoPageToken) nav+=`<button class="load-more" onclick="loadVideoComments('${videoId}','${videoTitle.replace(/'/g,'\'')}','${currentVideoPageToken}')">Cargar más comentarios</button>`;
+  feed.innerHTML=html;
+  let nav='<div style="display:flex;gap:8px;padding:0 0 12px;">';
+  if(currentVideoPageToken)nav+=`<button class="load-more" onclick="loadVideoComments('${videoId}','${videoTitle.replace(/'/g,"\\'")}','${currentVideoPageToken}')">Cargar más comentarios</button>`;
   nav+=`<button class="load-more" onclick="nextVideo()">Siguiente video →</button>`;
   nav+='</div>';
-  feed.innerHTML=html;
-  document.getElementById("load-more-container").innerHTML=nav;
-  pending.forEach(c=>{if(suggestions[c.id]){const ta=document.getElementById("reply-"+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
+  document.getElementById('load-more-container').innerHTML=nav;
+  pending.forEach(c=>{if(suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
 
 async function nextVideo(){
   currentVideoIndex++;
-  if(currentVideoIndex < videosList.length){
+  if(currentVideoIndex<videosList.length){
     const v=videosList[currentVideoIndex];
-    await loadVideoComments(v.id, v.title);
+    loadVideoComments(v.id,v.title);
   } else if(videosPageToken){
-    const token=localStorage.getItem("yt_token");
-    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:"include",headers:token?{"X-YT-Token":token}:{}});
+    const token=localStorage.getItem('yt_token');
+    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=[...videosList,...(data.videos||[])];
     videosPageToken=data.nextPageToken;
     const v=videosList[currentVideoIndex];
-    if(v) await loadVideoComments(v.id, v.title);
+    if(v)loadVideoComments(v.id,v.title);
   } else {
-    document.getElementById("feed").innerHTML='<div class="empty-state"><span class="emoji">🎉</span>Revisaste todos los videos!</div>';
+    document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🎉</span>Revisaste todos los videos!</div>';
+    document.getElementById('load-more-container').innerHTML='';
   }
 }
+
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
 checkYTStatus();
-// Auto-login si ya estaba logueado
-if(localStorage.getItem("loggedIn")==="1"){
-  document.getElementById("login-screen").style.display="none";
-  document.getElementById("app").style.display="flex";
+if(localStorage.getItem('loggedIn')==='1'){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='flex';
   loadAll();
 }
 const params=new URLSearchParams(window.location.search);
@@ -507,4 +552,3 @@ if(params.get('auth')==='success'){const token=params.get('token');if(token){loc
 </script>
 </body>
 </html>
-
