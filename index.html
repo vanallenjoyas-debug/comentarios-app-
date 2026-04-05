@@ -444,6 +444,7 @@ async function loadVideoComments(videoId, videoTitle, pageToken=null){
     const data=await r.json();
     if(!pageToken) currentVideoComments=[];
     currentVideoComments=[...currentVideoComments,...(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id))];
+    comments=currentVideoComments;
     currentVideoPageToken=data.nextPageToken;
     videoTitles[videoId]=videoTitle;
     renderVideoFeed(videoId, videoTitle);
