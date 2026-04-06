@@ -251,6 +251,18 @@ async function loadAll(){
   updateStats();
 }
 
+function showQuotaBanner(){
+  const feed=document.getElementById('feed');
+  const now=new Date();
+  const resetHour=new Date();
+  resetHour.setUTCHours(8,0,0,0); // 8am UTC = ~5am ARG
+  if(now.getUTCHours()>=8) resetHour.setUTCDate(resetHour.getUTCDate()+1);
+  const diffMs=resetHour-now;
+  const diffH=Math.floor(diffMs/3600000);
+  const diffM=Math.floor((diffMs%3600000)/60000);
+  feed.innerHTML=`<div class="empty-state"><span class="emoji">⏳</span><strong>Quota de YouTube agotada</strong><br><br>Se resetea a las 5am Argentina (en aprox. ${diffH}h ${diffM}m).<br><br>Mientras tanto podés usar <strong>Videos viejos</strong> que sí funciona.</div>`;
+}
+
 async function loadYTComments(pageToken=null){
   if(!ytConnected)return;
   try{
@@ -258,6 +270,7 @@ async function loadYTComments(pageToken=null){
     const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     if(r.status===401)return;
     const data=await r.json();
+    if(data.error&&data.error.toLowerCase().includes('quota')){showQuotaBanner();return;}
     const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,network:'yt',answered:c.answeredByMe||answeredIds.includes(c.id)}));
     comments=pageToken?[...comments,...nc]:[...comments.filter(c=>c.network!=='yt'),...nc];
     nextPageToken=data.nextPageToken;
@@ -480,7 +493,10 @@ async function loadVideos(){
     currentVideoIndex=0;
     if(videosList.length>0)loadVideoComments(videosList[0].id,videosList[0].title);
     else feed.innerHTML='<div class="empty-state"><span class="emoji">🎬</span>No hay videos</div>';
-  }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando videos</div>';}
+  }catch(e){
+    if(e.message&&e.message.toLowerCase().includes('quota')){showQuotaBanner();}
+    else{feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando videos</div>';}
+  }
 }
 
 async function loadVideoComments(videoId,videoTitle,pageToken=null){
@@ -559,5 +575,6 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 </script>
 </body>
 </html>
+
 
 
