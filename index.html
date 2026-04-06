@@ -438,7 +438,14 @@ async function sendReply(id,network){
         showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);
         renderFeed();updateStats();
       }
-    }else{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
+    }else{
+      r.json().then(errData=>{
+        const errMsg=(errData.error||'').toLowerCase();
+        if(errMsg.includes('quota')){showQuotaBanner();showToast('⏳ Quota de YouTube agotada');}
+        else{showToast('Error al publicar');}
+        if(btn){btn.disabled=false;btn.textContent='Publicar →';}
+      }).catch(()=>{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}});
+    }
   }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
 }
 
@@ -575,6 +582,7 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 </script>
 </body>
 </html>
+
 
 
 
