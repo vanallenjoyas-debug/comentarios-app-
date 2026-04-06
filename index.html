@@ -260,7 +260,7 @@ function showQuotaBanner(){
   const diffMs=resetHour-now;
   const diffH=Math.floor(diffMs/3600000);
   const diffM=Math.floor((diffMs%3600000)/60000);
-  feed.innerHTML=`<div class="empty-state"><span class="emoji">⏳</span><strong>Quota de YouTube agotada</strong><br><br>Se resetea a las 5am Argentina (en aprox. ${diffH}h ${diffM}m).<br><br>Mientras tanto podés usar <strong>Videos viejos</strong> que sí funciona.</div>`;
+  feed.innerHTML=`<div class="empty-state"><span class="emoji">⏳</span><strong>Quota de YouTube agotada</strong><br><br>Se resetea a las 5am Argentina (en aprox. ${diffH}h ${diffM}m).<br><br>Hasta entonces no se pueden cargar ni responder comentarios de YouTube.</div>`;
 }
 
 async function loadYTComments(pageToken=null){
