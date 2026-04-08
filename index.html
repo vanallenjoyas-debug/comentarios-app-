@@ -255,7 +255,7 @@ function showQuotaBanner(){
   const feed=document.getElementById('feed');
   const now=new Date();
   const resetHour=new Date();
-  resetHour.setUTCHours(8,0,0,0); // 8am UTC = ~5am ARG
+  resetHour.setUTCHours(8,0,0,0);
   if(now.getUTCHours()>=8) resetHour.setUTCDate(resetHour.getUTCDate()+1);
   const diffMs=resetHour-now;
   const diffH=Math.floor(diffMs/3600000);
@@ -278,14 +278,13 @@ async function loadYTComments(pageToken=null){
   }catch(e){console.error('YT load error',e);}
 }
 
-async function loadFBComments(cursor=null){
+async function loadFBComments(){
   try{
-    const r=await fetch(`${BACKEND}/fb/comments${cursor?'?after='+cursor:''}`,{credentials:'include'});
+    const r=await fetch(`${BACKEND}/fb/make-comments`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
-    comments=cursor?[...comments,...nc]:[...comments.filter(c=>c.network!=='fb'),...nc];
-    fbNextCursor=data.nextCursor;
+    comments=[...comments.filter(c=>c.network!=='fb'),...nc];
   }catch(e){console.error('FB load error',e);}
 }
 
@@ -357,14 +356,12 @@ function renderFeed(){
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
   let loadMoreHTML='';
   if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube</button>`;}
-  if(fbNextCursor&&(currentFilter==='all'||currentFilter==='fb')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
 
 async function loadMoreYT(){await loadYTComments(nextPageToken);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
-async function loadMoreFB(){await loadFBComments(fbNextCursor);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
 
 function buildCard(c){
   const t=formatTime(c.publishedAt);
@@ -427,7 +424,6 @@ async function sendReply(id,network){
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
       if(currentFilter==='videos'){
-        // Modo videos: marcar en currentVideoComments y rerenderizar
         const c=currentVideoComments.find(x=>x.id===id);
         if(c)c.answered=true;
         showToast('✓ Publicado en YouTube');
@@ -486,7 +482,6 @@ function skipComment(id){
 
 function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
 
-// ─── Videos viejos ────────────────────────────────────────────────────────────
 async function loadVideos(){
   const feed=document.getElementById('feed');
   document.getElementById('load-more-container').innerHTML='';
@@ -566,7 +561,6 @@ async function nextVideo(){
 }
 
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-
 
 (async()=>{
   const params=new URLSearchParams(window.location.search);
