@@ -280,7 +280,7 @@ async function loadYTComments(pageToken=null){
 
 async function loadFBComments(){
   try{
-    const r=await fetch(`${BACKEND}/fb/make-comments`,{credentials:'include'});
+    const r=await fetch(`${BACKEND}/fb/comments`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
