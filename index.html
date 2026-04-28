@@ -61,6 +61,7 @@
   .comment-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; animation: slideIn 0.2s ease; }
   @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
   .comment-card.answered { border-color: #2a3a2a; opacity: 0.6; }
+  .comment-card.fb-sending { border-color: #1877f244; opacity: 0.8; }
   .comment-card.fb { border-left: 3px solid #1877f2; }
   .card-top { padding: 14px 14px 10px; display: flex; align-items: flex-start; gap: 10px; }
   .author-photo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
@@ -91,6 +92,10 @@
   .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   .answered-badge { padding: 10px 14px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px; }
   .answered-badge::before { content: "✓"; font-weight: 700; }
+  .sending-badge { padding: 10px 14px; font-size: 12px; color: #1877f2; display: flex; align-items: center; gap: 6px; }
+  .sending-badge::before { content: "⏳"; }
+  .send-error-badge { padding: 10px 14px; font-size: 12px; color: var(--red); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .send-error-badge::before { content: "✗"; font-weight: 700; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; color: var(--text); z-index: 999; transition: transform 0.25s ease; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .stats-bar { padding: 10px 16px; display: flex; gap: 16px; border-top: 1px solid var(--border); background: var(--bg); }
@@ -104,6 +109,8 @@
   .video-header { padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
   .video-header a { color: var(--accent2); text-decoration: none; font-size: 13px; }
   .video-header span { font-size: 12px; color: var(--text3); margin-left: 8px; }
+  .btn-refresh-fb { background: none; border: 1px solid #1877f244; border-radius: var(--radius-sm); padding: 8px 16px; color: #5599ff; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; margin: 0 16px 12px; }
+  .btn-refresh-fb:hover { border-color: #1877f2; }
 </style>
 </head>
 <body>
@@ -195,6 +202,8 @@ let videosList=[], videosPageToken=null, currentVideoIndex=0;
 let currentVideoComments=[], currentVideoId='', currentVideoTitle='', currentVideoPageToken=null;
 const suggestions={};
 const suggestingNow=new Set();
+// Estado de envios FB: { id: 'sending' | 'ok' | 'error' }
+const fbSendState={};
 let observer=null;
 
 const YT_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>`;
@@ -265,6 +274,14 @@ async function loadAll(){
   updateStats();
 }
 
+async function refreshFB(){
+  showToast('Actualizando Facebook...');
+  await loadFBComments();
+  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+  renderFeed();
+  updateStats();
+}
+
 function showQuotaBanner(){
   const feed=document.getElementById('feed');
   const now=new Date();
@@ -298,7 +315,13 @@ async function loadFBComments(){
     if(!r.ok)return;
     const data=await r.json();
     const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
-    comments=[...comments.filter(c=>c.network!=='fb'),...nc];
+    // Mantener los que están en estado sending/error
+    const sending=comments.filter(c=>c.network==='fb'&&fbSendState[c.id]==='sending');
+    const errors=comments.filter(c=>c.network==='fb'&&fbSendState[c.id]==='error');
+    const newIds=new Set(nc.map(c=>c.id));
+    const keepSending=sending.filter(c=>!newIds.has(c.id));
+    const keepErrors=errors.filter(c=>!newIds.has(c.id));
+    comments=[...comments.filter(c=>c.network!=='fb'),...nc,...keepSending,...keepErrors];
   }catch(e){console.error('FB load error',e);}
 }
 
@@ -366,9 +389,18 @@ function renderFeed(){
     if(currentFilter==='fb')return !c.answered&&c.network==='fb';
     return !c.answered;
   });
+  // Para FB también mostrar los que están en sending/error
+  if(currentFilter==='all'||currentFilter==='fb'){
+    const fbSending=comments.filter(c=>c.network==='fb'&&(fbSendState[c.id]==='sending'||fbSendState[c.id]==='error')&&!f.find(x=>x.id===c.id));
+    f=[...f,...fbSending];
+  }
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
+  // Boton refresh FB
   let loadMoreHTML='';
+  if(currentFilter==='all'||currentFilter==='fb'){
+    loadMoreHTML+=`<button class="btn-refresh-fb" onclick="refreshFB()">📘 Actualizar comentarios de Facebook</button>`;
+  }
   if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
@@ -381,6 +413,7 @@ function buildCard(c){
   const t=formatTime(c.publishedAt);
   const isFB=c.network==='fb';
   const networkLabel=isFB?'Facebook':'YouTube';
+  const sendState=isFB?fbSendState[c.id]:null;
   let refHTML='';
   if(isFB){
     const msg=c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook';
@@ -393,17 +426,16 @@ function buildCard(c){
   const emojiBtns=["🔥","😄","🙌","🙏","💪","🤷"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
   const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join('');
   const escapedText=c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
-  return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
-    <div class="card-top">
-      <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
-      <div class="card-meta">
-        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
-        <div class="post-ref">${refHTML}</div>
-      </div>
-    </div>
-    <div class="comment-text">${esc(c.text)}</div>
-    ${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''}
-    ${c.answered?`<div class="answered-badge">Respondido</div>`:`
+
+  let bottomSection='';
+  if(c.answered){
+    bottomSection=`<div class="answered-badge">Respondido</div>`;
+  } else if(sendState==='sending'){
+    bottomSection=`<div class="sending-badge">Enviando a Facebook...</div>`;
+  } else if(sendState==='error'){
+    bottomSection=`<div class="send-error-badge" onclick="retrySendFB('${c.id}')">Error al enviar — tocá para reintentar</div>`;
+  } else {
+    bottomSection=`
       <div class="reply-area">
         <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
         <div class="quick-replies">${emojiBtns}<button class="btn-send" style="margin-left:auto" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button></div>
@@ -413,8 +445,61 @@ function buildCard(c){
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
           <button class="btn-regen" id="regen-${c.id}" onclick="regenSuggestion('${c.id}','${escapedText}')">🔄</button>
         </div>
-      </div>`}
+      </div>`;
+  }
+
+  const cardClass=`comment-card ${c.answered?'answered':''} ${isFB?'fb':''} ${sendState==='sending'?'fb-sending':''}`;
+  return `<div class="${cardClass}" id="card-${c.id}" data-comment-id="${c.id}">
+    <div class="card-top">
+      <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
+      <div class="card-meta">
+        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
+        <div class="post-ref">${refHTML}</div>
+      </div>
+    </div>
+    <div class="comment-text">${esc(c.text)}</div>
+    ${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''}
+    ${bottomSection}
   </div>`;
+}
+
+// Reintento para FB con error
+const fbPendingReplies={};
+async function retrySendFB(id){
+  const pending=fbPendingReplies[id];
+  if(!pending)return;
+  fbSendState[id]='sending';
+  updateCardState(id);
+  try{
+    const r=await fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(pending)});
+    if(r.ok){
+      fbSendState[id]='ok';
+      answeredIds.push(id);
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText:pending.commentText,replyText:pending.text})}).catch(()=>{});
+      const c=comments.find(x=>x.id===id);
+      if(c)c.answered=true;
+      delete fbPendingReplies[id];
+      showToast('✓ Publicado en Facebook');
+    } else {
+      fbSendState[id]='error';
+      showToast('Error al publicar en Facebook');
+    }
+  }catch(e){
+    fbSendState[id]='error';
+  }
+  updateCardState(id);
+  updateStats();
+}
+
+function updateCardState(id){
+  const card=document.getElementById('card-'+id);
+  if(!card)return;
+  const c=comments.find(x=>x.id===id);
+  if(!c)return;
+  card.outerHTML=buildCard(c);
+  // Re-apply suggestion if exists
+  const ta=document.getElementById('reply-'+id);
+  if(ta&&suggestions[id]&&!ta.dataset.edited)ta.value=suggestions[id];
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -424,29 +509,66 @@ async function sendReply(id,network){
   const ta=document.getElementById('reply-'+id);
   const text=ta?ta.value.trim():'';
   if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
+
+  const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
+  const c=comments.find(x=>x.id===id);
+  const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
+
+  if(network==='fb'){
+    // FB: modo no bloqueante — mostrar "enviando" y seguir
+    fbSendState[id]='sending';
+    fbPendingReplies[id]={text,commentText,videoTitle};
+    // Actualizar UI inmediatamente
+    const card=document.getElementById('card-'+id);
+    if(card)card.outerHTML=buildCard(c);
+    updateStats();
+    // Enviar en background
+    fetch(`${BACKEND}/fb/comments/${id}/reply`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({text,commentText,videoTitle})
+    }).then(async r=>{
+      if(r.ok){
+        fbSendState[id]='ok';
+        answeredIds.push(id);
+        fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
+        if(c)c.answered=true;
+        delete fbPendingReplies[id];
+        showToast('✓ Publicado en Facebook');
+      } else {
+        fbSendState[id]='error';
+        showToast('⚠ Error al enviar en Facebook — tocá el comentario para reintentar');
+      }
+      updateCardState(id);
+      updateStats();
+    }).catch(()=>{
+      fbSendState[id]='error';
+      updateCardState(id);
+      showToast('⚠ Error de conexión con Facebook');
+    });
+    return;
+  }
+
+  // YouTube: modo bloqueante (igual que antes)
   const btn=document.querySelector('#card-'+id+' .btn-send');
   if(btn){btn.disabled=true;btn.textContent='Publicando...';}
   try{
     const token=localStorage.getItem('yt_token');
-    const endpoint=network==='fb'?`${BACKEND}/fb/comments/${id}/reply`:`${BACKEND}/comments/${id}/reply`;
+    const endpoint=`${BACKEND}/comments/${id}/reply`;
     const headers={'Content-Type':'application/json'};
-    if(network==='yt'&&token)headers['X-YT-Token']=token;
-    const c=currentFilter==='videos'?currentVideoComments.find(x=>x.id===id):comments.find(x=>x.id===id);
-    const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
-    const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
-    const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text, commentText, videoTitle})});
+    if(token)headers['X-YT-Token']=token;
+    const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle})});
     if(r.ok){
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
       if(currentFilter==='videos'){
-        const c=currentVideoComments.find(x=>x.id===id);
         if(c)c.answered=true;
         showToast('✓ Publicado en YouTube');
         renderVideoFeed(currentVideoId,currentVideoTitle);
       } else {
-        const c=comments.find(x=>x.id===id);
         if(c)c.answered=true;
-        showToast(`✓ Publicado en ${network==='fb'?'Facebook':'YouTube'}`);
+        showToast('✓ Publicado en YouTube');
         renderFeed();updateStats();
       }
     }else{
@@ -495,7 +617,7 @@ function skipComment(id){
   }
 }
 
-function updateStats(){const p=comments.filter(c=>!c.answered).length;const a=comments.filter(c=>c.answered).length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
+function updateStats(){const p=comments.filter(c=>!c.answered&&fbSendState[c.id]!=='sending'&&fbSendState[c.id]!=='ok').length;const a=comments.filter(c=>c.answered||fbSendState[c.id]==='ok').length;document.getElementById('stat-pending').textContent=p;document.getElementById('stat-answered').textContent=a;document.getElementById('stat-total').textContent=comments.length;document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;}
 
 async function loadVideos(){
   const feed=document.getElementById('feed');
