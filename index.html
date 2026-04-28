@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -84,6 +85,8 @@
   .quick-reply:hover { border-color: var(--accent2); color: var(--accent); }
   .reply-actions { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
   .btn-skip { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 16px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .btn-regen { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 16px; color: var(--accent2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .btn-regen:hover { border-color: var(--accent2); }
   .btn-send { background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 20px; color: #0f0f0f; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   .answered-badge { padding: 10px 14px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px; }
@@ -199,6 +202,17 @@ const FB_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><p
 
 function setQuickReply(id,text){const ta=document.getElementById('reply-'+id);if(ta){ta.value=text;ta.dataset.edited='1';ta.focus();}}
 function appendEmoji(id,emoji){const ta=document.getElementById('reply-'+id);if(ta){ta.value=(ta.value||'')+emoji;ta.dataset.edited='1';ta.focus();}}
+
+async function regenSuggestion(id, text){
+  delete suggestions[id];
+  suggestingNow.delete(id);
+  const ta=document.getElementById('reply-'+id);
+  if(ta){ta.value='';delete ta.dataset.edited;}
+  const btn=document.getElementById('regen-'+id);
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  await fetchSuggestion(id, text);
+  if(btn){btn.textContent='🔄';btn.disabled=false;}
+}
 
 async function checkYTStatus(){
   try{
@@ -378,6 +392,7 @@ function buildCard(c){
   }
   const emojiBtns=["🔥","😄","🙌","🙏","💪","🤷"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
   const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${r}</button>`).join('');
+  const escapedText=c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
   return `<div class="comment-card ${c.answered?'answered':''} ${isFB?'fb':''}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
@@ -396,7 +411,7 @@ function buildCard(c){
         <div class="reply-actions">
           <button class="btn-skip" onclick="discardComment('${c.id}')">Descartar</button>
           <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
-        </div>
+          <button class="btn-regen" id="regen-${c.id}" onclick="regenSuggestion('${c.id}','${escapedText}')">🔄</button>
         </div>
       </div>`}
   </div>`;
@@ -422,7 +437,7 @@ async function sendReply(id,network){
     const r=await fetch(endpoint,{method:'POST',headers,credentials:'include',body:JSON.stringify({text, commentText, videoTitle})});
     if(r.ok){
       answeredIds.push(id);
-      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
       if(currentFilter==='videos'){
         const c=currentVideoComments.find(x=>x.id===id);
         if(c)c.answered=true;
