@@ -278,7 +278,14 @@ async function loadAll(){
   try{const sr=await fetch(`${BACKEND}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-  await Promise.all([loadYTComments(),loadFBComments()]);
+  await Promise.all([
+  loadYTComments().catch(e=>console.error('YT falló, reintentando...', e)),
+  loadFBComments()
+]);
+// Retry YT si no cargó
+if(ytConnected && comments.filter(c=>c.network==='yt').length===0){
+  await loadYTComments();
+}
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   const savedFilter=restoreFilter();
   if(savedFilter==='videos') loadVideos();
