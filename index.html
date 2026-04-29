@@ -170,7 +170,7 @@ const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
 const CORRECT_YT_HANDLE='@vanallenjoyas';
 const QUICK_REPLIES=['puede ser, seria cuestion de ponerlo a prueba','la proxima lo voy a hacer','la verdad es que yo lo hago asi','jajaja que ocurrente','jajaja top comment','no me copio, yo hablo asi','disculpa pero no te entiendo','HIBRIDOOOO','Exacto','La verdad que si','Meh','Jajajajaja','Tengo video largo en mi perfil','en tu localidad seguro venden','aunque no parezca hacer esto es mucho mas rentable de lo que parece','es buena idea, lo tomo para hacer un video en el futuro, gracias'];
 
-let currentFilter='all';
+let currentFilter=localStorage.getItem('lastFilter')||'yt';
 let comments=[], answeredIds=[], discardedIds=[];
 let nextPageToken=null, fbNextCursor=null, ytConnected=false;
 let videoTitles={};
