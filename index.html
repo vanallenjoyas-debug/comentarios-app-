@@ -539,7 +539,7 @@ async function sendReply(id,network){
     const card=document.getElementById('card-'+id);
     if(card)card.outerHTML=buildCard(c);
     updateStats();
-    fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
+    fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle,userEdited:!!(ta?.dataset.edited)})}).then(async r=>{
       if(r.ok){
         fbSendState[id]='ok';
         answeredIds.push(id);
@@ -566,7 +566,7 @@ async function sendReply(id,network){
     const token=localStorage.getItem('yt_token');
     const headers={'Content-Type':'application/json'};
     if(token)headers['X-YT-Token']=token;
-    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle})});
+    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle,userEdited:!!(ta?.dataset.edited)});
     if(r.ok){
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
