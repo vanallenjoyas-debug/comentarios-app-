@@ -487,7 +487,7 @@ async function retrySendFB(id){
       fbSendState[id]='ok';
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText:pending.commentText,replyText:pending.text})}).catch(()=>{});
-      const c=comments.find(x=>x.id===id);
+      const c=currentFilter==='videos'?currentVideoComments.find(x=>x.id===id):comments.find(x=>x.id===id);
       if(c)c.answered=true;
       delete fbPendingReplies[id];
       showToast('✓ Publicado en Facebook');
