@@ -313,7 +313,7 @@ async function loadYTComments(pageToken=null){
 
 async function loadFBComments(){
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments`,{credentials:'include'});
+    const r=await fetch(`${BACKEND_FB}/fb/comments`);
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
@@ -330,7 +330,7 @@ async function loadFBComments(){
 async function loadMoreFB(){
   if(!fbNextCursor)return;
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments?after=${fbNextCursor}`,{credentials:'include'});
+    const r=await fetch(`${BACKEND_FB}/fb/comments?after=${fbNextCursor}`);
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
@@ -483,7 +483,7 @@ async function retrySendFB(id){
   fbSendState[id]='sending';
   updateCardState(id);
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(pending)});
+    const r=await fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});
     if(r.ok){
       fbSendState[id]='ok';
       answeredIds.push(id);
@@ -527,7 +527,7 @@ async function sendReply(id,network){
     const card=document.getElementById('card-'+id);
     if(card)card.outerHTML=buildCard(c);
     updateStats();
-    fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
+    fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
       if(r.ok){
         fbSendState[id]='ok';
         answeredIds.push(id);
