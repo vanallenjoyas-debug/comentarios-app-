@@ -85,11 +85,11 @@
   .btn-send { background: var(--accent); border: none; border-radius: var(--radius-sm); padding: 9px 20px; color: #0f0f0f; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-send:disabled { opacity: 0.4; cursor: not-allowed; }
   .answered-badge { padding: 10px 14px; font-size: 12px; color: var(--green); display: flex; align-items: center; gap: 6px; }
-  .answered-badge::before { content: "RESPONDIDO"; font-weight: 700; font-size: 11px; }
+  .answered-badge::before { content: "✓ Respondido"; font-weight: 700; }
   .sending-badge { padding: 10px 14px; font-size: 12px; color: #1877f2; display: flex; align-items: center; gap: 6px; }
-  .sending-badge::before { content: "ENVIANDO..."; font-size: 11px; }
+  .sending-badge::before { content: "⏳ Enviando..."; }
   .send-error-badge { padding: 10px 14px; font-size: 12px; color: var(--red); display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .send-error-badge::before { content: "ERROR — TOCAR PARA REINTENTAR"; font-size: 11px; }
+  .send-error-badge::before { content: "✗ Error — tocar para reintentar"; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 10px 20px; font-size: 13px; color: var(--text); z-index: 999; transition: transform 0.25s ease; white-space: nowrap; }
   .toast.show { transform: translateX(-50%) translateY(0); }
   .stats-bar { padding: 10px 16px; display: flex; gap: 16px; border-top: 1px solid var(--border); background: var(--bg); }
@@ -111,13 +111,13 @@
 <div id="login-screen">
   <div class="login-logo">
     <div class="brand">Panel de comentarios</div>
-    <h1>Joyeria Sudaca</h1>
+    <h1>Joyería Sudaca</h1>
   </div>
   <div class="login-box">
     <div class="field"><label>Usuario</label><input type="text" id="login-user" placeholder="tu usuario" autocomplete="username" autocapitalize="none"></div>
-    <div class="field"><label>Contrasena</label><input type="password" id="login-pass" placeholder="..." autocomplete="current-password"></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password"></div>
     <button class="btn-primary" onclick="doLogin()">Entrar</button>
-    <div class="login-error" id="login-error">Usuario o contrasena incorrectos</div>
+    <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
     <div class="divider">Cuentas conectadas</div>
     <div class="login-accounts">
       <div class="login-account-row yt">
@@ -128,10 +128,10 @@
       <div class="login-account-row fb">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
         <span>@javier.vanallen</span>
-        <span class="check">ok</span>
+        <span class="check">✓</span>
       </div>
     </div>
-    <div class="yt-status disconnected" id="yt-status">YouTube no conectado</div>
+    <div class="yt-status disconnected" id="yt-status">▶️ YouTube no conectado</div>
     <button class="btn-google" onclick="connectYouTube()">
       <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#FF0000" d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
       Conectar YouTube
@@ -150,10 +150,10 @@
     <div class="connected-accounts" id="connected-accounts"></div>
   </div>
   <div class="filter-bar">
-    <div class="filter-chip" onclick="setFilter('yt',this)">YouTube</div>
-    <div class="filter-chip" onclick="setFilter('fb',this)">Facebook</div>
-     <div class="filter-chip" onclick="setFilter('videos',this)">Videos viejos</div>
-    <div class="filter-chip" onclick="setFilter('answered',this)">Respondidos</div>
+    <div class="filter-chip" id="chip-yt" onclick="setFilter('yt',this)">▶️ YouTube</div>
+    <div class="filter-chip" id="chip-fb" onclick="setFilter('fb',this)">📘 Facebook</div>
+    <div class="filter-chip" id="chip-videos" onclick="setFilter('videos',this)">🎬 Videos viejos</div>
+    <div class="filter-chip" id="chip-answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -168,7 +168,20 @@
 const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
 const CORRECT_YT_HANDLE='@vanallenjoyas';
-const QUICK_REPLIES=['puede ser, seria cuestion de ponerlo a prueba','la proxima lo voy a hacer','la verdad es que yo lo hago asi','jajaja que ocurrente','jajaja top comment','no me copio, yo hablo asi','disculpa pero no te entiendo','HIBRIDOOOO','Exacto','La verdad que si','Meh','Jajajajaja','Tengo video largo en mi perfil','en tu localidad seguro venden','aunque no parezca hacer esto es mucho mas rentable de lo que parece','es buena idea, lo tomo para hacer un video en el futuro, gracias'];
+const QUICK_REPLIES=[
+  'puede ser, seria cuestion de ponerlo a prueba 😄',
+  'la proxima lo voy a hacer 💪',
+  'la verdad es que yo lo hago asi 😄',
+  'jajaja que ocurrente 😂',
+  'jajaja top comment 😂',
+  'no me copio, yo hablo asi 😄',
+  'disculpa pero no te entiendo 🤷',
+  'HIBRIDOOOO 💪','Exacto 💪','La verdad que si 💪','Meh 🤷','Jajajajaja 😂',
+  'Tengo video largo en mi perfil',
+  'en tu localidad seguro venden 🔧',
+  'aunque no parezca hacer esto es mucho mas rentable de lo que parece 💪',
+  'es buena idea, lo tomo para hacer un video en el futuro, gracias 👍'
+];
 
 let currentFilter=localStorage.getItem('lastFilter')||'yt';
 let comments=[], answeredIds=[], discardedIds=[];
@@ -182,8 +195,14 @@ const fbSendState={};
 const fbPendingReplies={};
 let observer=null;
 
-const YT_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>';
-const FB_ICON='<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>';
+const YT_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1C24 15.9 24 12 24 12s0-3.9-.5-5.8z"/><path fill="white" d="M9.5 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>`;
+const FB_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>`;
+
+function activateChip(filter){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  const chip=document.getElementById('chip-'+filter);
+  if(chip)chip.classList.add('active');
+}
 
 function setQuickReply(id,text){const ta=document.getElementById('reply-'+id);if(ta){ta.value=text;ta.dataset.edited='1';ta.focus();}}
 function appendEmoji(id,emoji){const ta=document.getElementById('reply-'+id);if(ta){ta.value=(ta.value||'')+emoji;ta.dataset.edited='1';ta.focus();}}
@@ -193,16 +212,16 @@ async function regenSuggestion(id,text){
   const ta=document.getElementById('reply-'+id);
   if(ta){ta.value='';delete ta.dataset.edited;}
   const btn=document.getElementById('regen-'+id);
-  if(btn){btn.textContent='...';btn.disabled=true;}
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
   await fetchSuggestion(id,text);
-  if(btn){btn.textContent='regen';btn.disabled=false;}
+  if(btn){btn.textContent='🔄';btn.disabled=false;}
 }
 
 async function checkYTStatus(){
   try{
     const token=localStorage.getItem('yt_token');
     if(!token){ytConnected=false;updateYTStatus();updateAccountDisplays(null,null);return;}
-    const r=await fetch(BACKEND+'/auth/status',{credentials:'include',headers:{'X-YT-Token':token}});
+    const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();
     ytConnected=d.authenticated;updateYTStatus();
     if(ytConnected)loadChannelInfo();else updateAccountDisplays(null,null);
@@ -212,7 +231,7 @@ async function checkYTStatus(){
 async function loadChannelInfo(){
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(BACKEND+'/auth/channel',{credentials:'include',headers:{'X-YT-Token':token}});
+    const r=await fetch(`${BACKEND}/auth/channel`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();updateAccountDisplays(d.name,d.handle);
   }catch(e){updateAccountDisplays(null,null);}
 }
@@ -220,35 +239,44 @@ async function loadChannelInfo(){
 function updateAccountDisplays(ytName,ytHandle){
   const display=ytHandle||ytName||'no conectado';
   const isCorrect=ytHandle&&ytHandle.toLowerCase()===CORRECT_YT_HANDLE.toLowerCase();
-  const indicator=ytHandle?(isCorrect?'<span class="check">ok</span>':'<span class="warn">cuenta incorrecta</span>'):'';
+  const indicator=ytHandle?(isCorrect?'<span class="check">✓</span>':'<span class="warn">⚠ cuenta incorrecta</span>'):'';
   const loginHandle=document.getElementById('login-yt-handle');
   const loginCheck=document.getElementById('login-yt-check');
   if(loginHandle)loginHandle.textContent=display;
   if(loginCheck)loginCheck.innerHTML=indicator;
   const el=document.getElementById('connected-accounts');
   if(!el)return;
-  el.innerHTML='<span class="account-badge yt">'+YT_ICON+' '+display+indicator+'</span><span class="account-badge fb">'+FB_ICON+' @javier.vanallen<span class="check">ok</span></span>';
+  el.innerHTML=`<span class="account-badge yt">${YT_ICON} ${display}${indicator}</span><span class="account-badge fb">${FB_ICON} @javier.vanallen<span class="check">✓</span></span>`;
 }
 
-function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='YouTube no conectado';}}
-async function connectYouTube(){try{const r=await fetch(BACKEND+'/auth/youtube',{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
-function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){localStorage.setItem('loggedIn','1');document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadAll();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
+function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
+async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
+function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){localStorage.setItem('loggedIn','1');document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';initApp();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
 function doLogout(){localStorage.removeItem('loggedIn');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
-document.addEventListener('keydown',function(e){if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 
-async function loadAll(){
-  try{const sr=await fetch(BACKEND+'/state');const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
+async function initApp(){
+  // Cargar state y comentarios
+  try{const sr=await fetch(`${BACKEND}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
-  document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-  await Promise.all([loadYTComments(),loadFBComments()]);
-  comments.sort(function(a,b){return new Date(b.publishedAt)-new Date(a.publishedAt);});
-  renderFeed();updateStats();
+  // Activar el chip guardado
+  if(currentFilter==='videos'){
+    activateChip('videos');
+    await Promise.all([loadYTComments(),loadFBComments()]);
+    loadVideos();
+  } else {
+    activateChip(currentFilter);
+    document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
+    await Promise.all([loadYTComments(),loadFBComments()]);
+    comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+    renderFeed();updateStats();
+  }
 }
 
 async function refreshFB(){
   showToast('Actualizando Facebook...');fbNextCursor=null;
   await loadFBComments();
-  comments.sort(function(a,b){return new Date(b.publishedAt)-new Date(a.publishedAt);});
+  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   renderFeed();updateStats();
 }
 
@@ -258,20 +286,19 @@ function showQuotaBanner(){
   resetHour.setUTCHours(8,0,0,0);
   if(now.getUTCHours()>=8)resetHour.setUTCDate(resetHour.getUTCDate()+1);
   const diffMs=resetHour-now,diffH=Math.floor(diffMs/3600000),diffM=Math.floor((diffMs%3600000)/60000);
-  feed.innerHTML='<div class="empty-state"><span class="emoji">&#x23F3;</span><strong>Quota de YouTube agotada</strong><br><br>Se resetea a las 5am Argentina (en aprox. '+diffH+'h '+diffM+'m).</div>';
+  feed.innerHTML=`<div class="empty-state"><span class="emoji">⏳</span><strong>Quota de YouTube agotada</strong><br><br>Se resetea a las 5am Argentina (en aprox. ${diffH}h ${diffM}m).</div>`;
 }
 
-async function loadYTComments(pageToken){
+async function loadYTComments(pageToken=null){
   if(!ytConnected)return;
   try{
     const token=localStorage.getItem('yt_token');
-    const url=BACKEND+'/comments'+(pageToken?'?pageToken='+pageToken:'');
-    const r=await fetch(url,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     if(r.status===401)return;
     const data=await r.json();
-    if(data.error&&data.error.toLowerCase().indexOf('quota')>=0){showQuotaBanner();return;}
-    const nc=data.comments.filter(function(c){return !discardedIds.includes(c.id);}).map(function(c){return Object.assign({},c,{network:'yt',answered:c.answeredByMe||answeredIds.includes(c.id)});});
-    if(pageToken){comments=comments.concat(nc);}else{comments=comments.filter(function(c){return c.network!=='yt';}).concat(nc);}
+    if(data.error&&data.error.toLowerCase().includes('quota')){showQuotaBanner();return;}
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,network:'yt',answered:c.answeredByMe||answeredIds.includes(c.id)}));
+    comments=pageToken?[...comments,...nc]:[...comments.filter(c=>c.network!=='yt'),...nc];
     nextPageToken=data.nextPageToken;
     loadVideoTitles(nc);
   }catch(e){console.error('YT load error',e);}
@@ -279,50 +306,50 @@ async function loadYTComments(pageToken){
 
 async function loadFBComments(){
   try{
-    const r=await fetch(BACKEND+'/fb/comments',{credentials:'include'});
+    const r=await fetch(`${BACKEND}/fb/comments`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
-    const nc=data.comments.filter(function(c){return !discardedIds.includes(c.id);}).map(function(c){return Object.assign({},c,{answered:answeredIds.includes(c.id)});});
-    const sending=comments.filter(function(c){return c.network==='fb'&&fbSendState[c.id]==='sending';});
-    const errors=comments.filter(function(c){return c.network==='fb'&&fbSendState[c.id]==='error';});
-    const newIds=new Set(nc.map(function(c){return c.id;}));
-    comments=comments.filter(function(c){return c.network!=='fb';}).concat(nc).concat(sending.filter(function(c){return !newIds.has(c.id);})).concat(errors.filter(function(c){return !newIds.has(c.id);}));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    const sending=comments.filter(c=>c.network==='fb'&&fbSendState[c.id]==='sending');
+    const errors=comments.filter(c=>c.network==='fb'&&fbSendState[c.id]==='error');
+    const newIds=new Set(nc.map(c=>c.id));
+    comments=[...comments.filter(c=>c.network!=='fb'),...nc,...sending.filter(c=>!newIds.has(c.id)),...errors.filter(c=>!newIds.has(c.id))];
   }catch(e){console.error('FB load error',e);}
 }
 
 async function loadMoreFB(){
   if(!fbNextCursor)return;
   try{
-    const r=await fetch(BACKEND+'/fb/comments?after='+fbNextCursor,{credentials:'include'});
+    const r=await fetch(`${BACKEND}/fb/comments?after=${fbNextCursor}`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
-    const nc=data.comments.filter(function(c){return !discardedIds.includes(c.id);}).map(function(c){return Object.assign({},c,{answered:answeredIds.includes(c.id)});});
-    comments=comments.concat(nc);
-    comments.sort(function(a,b){return new Date(b.publishedAt)-new Date(a.publishedAt);});
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    comments=[...comments,...nc];
+    comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
     renderFeed();updateStats();
   }catch(e){console.error('FB load more error',e);}
 }
 
 async function loadVideoTitles(cs){
-  const ids=Array.from(new Set(cs.map(function(c){return c.videoId;}).filter(Boolean)));
-  for(var i=0;i<ids.length;i++){
-    var id=ids[i];
+  const ids=[...new Set(cs.map(c=>c.videoId).filter(Boolean))];
+  for(const id of ids){
     if(videoTitles[id])continue;
     try{
       const token=localStorage.getItem('yt_token');
-      const r=await fetch(BACKEND+'/video/'+id,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+      const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
       const d=await r.json();videoTitles[id]=d.title;
     }catch(e){}
   }
+  // Solo rerenderizar si NO estamos en videos viejos
   if(currentFilter!=='videos')renderFeed();
 }
 
 function setFilter(net,el){
   currentFilter=net;
-  document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});
-  el.classList.add('active');
+  if(net!=='videos')localStorage.setItem('lastFilter',net);
+  activateChip(net);
   if(net==='videos')loadVideos();else renderFeed();
 }
 
@@ -330,62 +357,71 @@ async function fetchSuggestion(id,text){
   if(suggestions[id]||suggestingNow.has(id))return;
   suggestingNow.add(id);
   const ta=document.getElementById('reply-'+id);
-  if(ta){ta.placeholder='Generando sugerencia...';ta.classList.add('loading-suggestion');}
+  if(ta){ta.placeholder='✨ Generando sugerencia...';ta.classList.add('loading-suggestion');}
   try{
-    const r=await fetch(BACKEND+'/suggest-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:text})});
+    const r=await fetch(`${BACKEND}/suggest-reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:text})});
     const data=await r.json();
     if(data.suggestion){
       suggestions[id]=data.suggestion;
       const ta2=document.getElementById('reply-'+id);
-      if(ta2&&!ta2.dataset.edited){ta2.value=data.suggestion;ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribi tu respuesta...';}
+      if(ta2&&!ta2.dataset.edited){ta2.value=data.suggestion;ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribí tu respuesta...';}
     }
   }catch(e){
     const ta2=document.getElementById('reply-'+id);
-    if(ta2){ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribi tu respuesta...';}
+    if(ta2){ta2.classList.remove('loading-suggestion');ta2.placeholder='Escribí tu respuesta...';}
   }finally{suggestingNow.delete(id);}
 }
 
 function setupObserver(){
   if(observer)observer.disconnect();
   const pool=currentFilter==='videos'?currentVideoComments:comments;
-  observer=new IntersectionObserver(function(entries){
-    entries.forEach(function(entry){
+  observer=new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
       if(entry.isIntersecting){
         const id=entry.target.dataset.commentId;
-        const c=pool.find(function(x){return x.id===id;});
+        const c=pool.find(x=>x.id===id);
         if(c&&!c.answered)fetchSuggestion(id,c.text);
       }
     });
   },{threshold:0.2});
-  document.querySelectorAll('.comment-card[data-comment-id]').forEach(function(el){observer.observe(el);});
+  document.querySelectorAll('.comment-card[data-comment-id]').forEach(el=>observer.observe(el));
 }
 
 function renderFeed(){
+  if(currentFilter==='videos')return; // videos tiene su propio render
   const feed=document.getElementById('feed');
-  let f=comments.filter(function(c){
+  let f=comments.filter(c=>{
     if(currentFilter==='answered')return c.answered;
     if(currentFilter==='yt')return !c.answered&&c.network==='yt';
     if(currentFilter==='fb')return !c.answered&&c.network==='fb';
     return !c.answered;
   });
-  if(currentFilter==='all'||currentFilter==='fb'){
-    const fbSendingExtra=comments.filter(function(c){return c.network==='fb'&&(fbSendState[c.id]==='sending'||fbSendState[c.id]==='error')&&!f.find(function(x){return x.id===c.id;});});
-    f=f.concat(fbSendingExtra);
+  // Para FB agregar los que están en sending/error
+  if(currentFilter==='fb'){
+    const extra=comments.filter(c=>c.network==='fb'&&(fbSendState[c.id]==='sending'||fbSendState[c.id]==='error')&&!f.find(x=>x.id===c.id));
+    f=[...f,...extra];
   }
-  if(f.length===0){feed.innerHTML='<div class="empty-state"><span class="emoji">'+(currentFilter==='answered'?'ok':'ok')+'</span>'+(currentFilter==='answered'?'Nada respondido aun':'Todo al dia!')+'</div>';}
-  else{feed.innerHTML=f.map(buildCard).join('');}
+  if(f.length===0){
+    feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;
+  } else {
+    feed.innerHTML=f.map(c=>buildCard(c)).join('');
+  }
   let loadMoreHTML='';
-  if(currentFilter==='all'||currentFilter==='fb'){
-    loadMoreHTML+='<button class="btn-refresh-fb" onclick="refreshFB()">Actualizar Facebook</button>';
-    if(fbNextCursor)loadMoreHTML+='<button class="load-more" onclick="loadMoreFB()">Cargar mas de Facebook</button>';
+  if(currentFilter==='fb'){
+    loadMoreHTML+=`<button class="btn-refresh-fb" onclick="refreshFB()">📘 Actualizar Facebook</button>`;
+    if(fbNextCursor)loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;
   }
-  if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt'))loadMoreHTML+='<button class="load-more" onclick="loadMoreYT()">Cargar mas de YouTube</button>';
+  if(currentFilter==='yt'&&nextPageToken)loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
-  f.forEach(function(c){if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
+  f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
 
-async function loadMoreYT(){await loadYTComments(nextPageToken);comments.sort(function(a,b){return new Date(b.publishedAt)-new Date(a.publishedAt);});renderFeed();updateStats();}
+async function loadMoreYT(){
+  await loadYTComments(nextPageToken);
+  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+  renderFeed();updateStats();
+}
 
 function buildCard(c){
   const t=formatTime(c.publishedAt);
@@ -394,57 +430,76 @@ function buildCard(c){
   const sendState=isFB?fbSendState[c.id]:null;
   let refHTML='';
   if(isFB){refHTML=esc(c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook');}
-  else{const title=videoTitles[c.videoId]||'YouTube';const url=c.videoId?'https://www.youtube.com/watch?v='+c.videoId:'#';refHTML='<a href="'+url+'" target="_blank" rel="noopener">'+esc(title)+'</a>';}
-  const emojiBtns=["regen","ok","bien","gracias","fuerza","meh"].map(function(e,i){const emojis=["🔄","✓","💪","🙏","🔥","🤷"];return '<button class="quick-reply" onclick="appendEmoji(\''+c.id+'\',\''+emojis[i]+'\')">'+emojis[i]+'</button>';}).join('');
-  const quickBtns=QUICK_REPLIES.map(function(r){return '<button class="quick-reply" onclick="setQuickReply(\''+c.id+'\',\''+r.replace(/'/g,"\\'")+'\')" title="'+esc(r)+'">'+esc(r.substring(0,20))+'...</button>';}).join('');
+  else{const title=videoTitles[c.videoId]||'YouTube';const url=c.videoId?`https://www.youtube.com/watch?v=${c.videoId}`:'#';refHTML=`<a href="${url}" target="_blank" rel="noopener">${esc(title)}</a>`;}
+  const emojiBtns=["🔥","😄","🙌","🙏","💪","🤷"].map(e=>`<button class="quick-reply" onclick="appendEmoji('${c.id}','${e}')">${e}</button>`).join('');
+  const quickBtns=QUICK_REPLIES.map(r=>`<button class="quick-reply" onclick="setQuickReply('${c.id}','${r.replace(/'/g,"\\'")}')">${esc(r)}</button>`).join('');
   const escapedText=c.text.replace(/'/g,"\\'").replace(/"/g,'&quot;');
   let bottomSection='';
-  if(c.answered){bottomSection='<div class="answered-badge"></div>';}
-  else if(sendState==='sending'){bottomSection='<div class="sending-badge"></div>';}
-  else if(sendState==='error'){bottomSection='<div class="send-error-badge" onclick="retrySendFB(\''+c.id+'\')"></div>';}
-  else{bottomSection='<div class="reply-area"><textarea class="reply-input" id="reply-'+c.id+'" placeholder="Escribi tu respuesta..." rows="3" oninput="this.dataset.edited=\'1\'"></textarea><div class="quick-replies">'+emojiBtns+'<button class="btn-send" style="margin-left:auto" onclick="sendReply(\''+c.id+'\',\''+c.network+'\')">Publicar</button></div><div class="quick-replies">'+quickBtns+'</div><div class="reply-actions"><button class="btn-skip" onclick="discardComment(\''+c.id+'\')">Descartar</button><button class="btn-skip" onclick="skipComment(\''+c.id+'\')">Omitir</button><button class="btn-regen" id="regen-'+c.id+'" onclick="regenSuggestion(\''+c.id+'\',\''+escapedText+'\')">regen</button></div></div>';}
-  const cardClass='comment-card'+(c.answered?' answered':'')+(isFB?' fb':'')+(sendState==='sending'?' fb-sending':'');
-  return '<div class="'+cardClass+'" id="card-'+c.id+'" data-comment-id="'+c.id+'"><div class="card-top"><img class="author-photo" src="'+(c.authorPhoto||'')+'" onerror="this.style.display=\'none\'"><div class="card-meta"><div class="card-meta-top"><span class="username">'+esc(c.author)+'</span><span class="network-label'+(isFB?' fb':'')+'">'+networkLabel+'</span><span class="timestamp">'+t+'</span></div><div class="post-ref">'+refHTML+'</div></div></div><div class="comment-text">'+esc(c.text)+'</div>'+(c.likeCount>0?'<div class="comment-likes">likes: '+c.likeCount+'</div>':'')+bottomSection+'</div>';
+  if(c.answered){bottomSection=`<div class="answered-badge"></div>`;}
+  else if(sendState==='sending'){bottomSection=`<div class="sending-badge"></div>`;}
+  else if(sendState==='error'){bottomSection=`<div class="send-error-badge" onclick="retrySendFB('${c.id}')"></div>`;}
+  else{bottomSection=`<div class="reply-area">
+    <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
+    <div class="quick-replies">${emojiBtns}<button class="btn-send" style="margin-left:auto" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button></div>
+    <div class="quick-replies">${quickBtns}</div>
+    <div class="reply-actions">
+      <button class="btn-skip" onclick="discardComment('${c.id}')">Descartar</button>
+      <button class="btn-skip" onclick="skipComment('${c.id}')">Omitir</button>
+      <button class="btn-regen" id="regen-${c.id}" onclick="regenSuggestion('${c.id}','${escapedText}')">🔄</button>
+    </div></div>`;}
+  const cardClass=`comment-card${c.answered?' answered':''}${isFB?' fb':''}${sendState==='sending'?' fb-sending':''}`;
+  return `<div class="${cardClass}" id="card-${c.id}" data-comment-id="${c.id}">
+    <div class="card-top">
+      <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
+      <div class="card-meta">
+        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label${isFB?' fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
+        <div class="post-ref">${refHTML}</div>
+      </div>
+    </div>
+    <div class="comment-text">${esc(c.text)}</div>
+    ${c.likeCount>0?`<div class="comment-likes">👍 ${c.likeCount}</div>`:''}
+    ${bottomSection}
+  </div>`;
 }
 
 async function retrySendFB(id){
   const pending=fbPendingReplies[id];if(!pending)return;
   fbSendState[id]='sending';renderFeed();
   try{
-    const r=await fetch(BACKEND+'/fb/comments/'+id+'/reply',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(pending)});
+    const r=await fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(pending)});
     if(r.ok){
       fbSendState[id]='ok';answeredIds.push(id);
-      fetch(BACKEND+'/state/answered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,commentText:pending.commentText,replyText:pending.text})}).catch(function(){});
-      comments=comments.map(function(x){return x.id===id?Object.assign({},x,{answered:true}):x;});
-      delete fbPendingReplies[id];showToast('Publicado en Facebook');
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText:pending.commentText,replyText:pending.text})}).catch(()=>{});
+      comments=comments.map(x=>x.id===id?{...x,answered:true}:x);
+      delete fbPendingReplies[id];showToast('✓ Publicado en Facebook');
     }else{fbSendState[id]='error';showToast('Error al publicar en Facebook');}
   }catch(e){fbSendState[id]='error';}
   renderFeed();updateStats();
 }
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return 'hace '+m+'m';const h=Math.floor(m/60);if(h<24)return 'hace '+h+'h';return 'hace '+Math.floor(h/24)+'d';}
+function formatTime(iso){if(!iso)return '';const diff=Date.now()-new Date(iso).getTime();const m=Math.floor(diff/60000);if(m<60)return `hace ${m}m`;const h=Math.floor(m/60);if(h<24)return `hace ${h}h`;return `hace ${Math.floor(h/24)}d`;}
 
 async function sendReply(id,network){
   const ta=document.getElementById('reply-'+id);
   const text=ta?ta.value.trim():'';
-  if(!text){ta.style.borderColor='var(--red)';setTimeout(function(){ta.style.borderColor='';},1000);return;}
-  const commentText=(document.querySelector('#card-'+id+' .comment-text')||{}).textContent||'';
-  const c=currentFilter==='videos'?currentVideoComments.find(function(x){return x.id===id;}):comments.find(function(x){return x.id===id;});
-  const videoTitle=c&&c.videoId?videoTitles[c.videoId]||'':'';
+  if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
+  const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
+  const c=currentFilter==='videos'?currentVideoComments.find(x=>x.id===id):comments.find(x=>x.id===id);
+  const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
   if(network==='fb'){
     fbSendState[id]='sending';
-    fbPendingReplies[id]={text:text,commentText:commentText,videoTitle:videoTitle};
+    fbPendingReplies[id]={text,commentText,videoTitle};
     renderFeed();updateStats();
-    fetch(BACKEND+'/fb/comments/'+id+'/reply',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text:text,commentText:commentText,videoTitle:videoTitle})}).then(function(r){
+    fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
       if(r.ok){
         fbSendState[id]='ok';answeredIds.push(id);
-        fetch(BACKEND+'/state/answered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,commentText:commentText,replyText:text})}).catch(function(){});
-        comments=comments.map(function(x){return x.id===id?Object.assign({},x,{answered:true}):x;});
-        delete fbPendingReplies[id];showToast('Publicado en Facebook');
-      }else{fbSendState[id]='error';showToast('Error al enviar - toca para reintentar');}
+        fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
+        comments=comments.map(x=>x.id===id?{...x,answered:true}:x);
+        delete fbPendingReplies[id];showToast('✓ Publicado en Facebook');
+      }else{fbSendState[id]='error';showToast('⚠ Error al enviar — tocá para reintentar');}
       renderFeed();updateStats();
-    }).catch(function(){fbSendState[id]='error';renderFeed();showToast('Error de conexion con Facebook');});
+    }).catch(()=>{fbSendState[id]='error';renderFeed();showToast('⚠ Error de conexión con Facebook');});
     return;
   }
   const btn=document.querySelector('#card-'+id+' .btn-send');
@@ -453,53 +508,53 @@ async function sendReply(id,network){
     const token=localStorage.getItem('yt_token');
     const headers={'Content-Type':'application/json'};
     if(token)headers['X-YT-Token']=token;
-    const r=await fetch(BACKEND+'/comments/'+id+'/reply',{method:'POST',headers:headers,credentials:'include',body:JSON.stringify({text:text,commentText:commentText,videoTitle:videoTitle})});
+    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle})});
     if(r.ok){
       answeredIds.push(id);
-      fetch(BACKEND+'/state/answered',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id,commentText:commentText,replyText:text})}).catch(function(){});
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
       if(currentFilter==='videos'){
-        currentVideoComments=currentVideoComments.map(function(x){return x.id===id?Object.assign({},x,{answered:true}):x;});
-        showToast('Publicado en YouTube');renderVideoFeed(currentVideoId,currentVideoTitle);
+        currentVideoComments=currentVideoComments.map(x=>x.id===id?{...x,answered:true}:x);
+        showToast('✓ Publicado en YouTube');renderVideoFeed(currentVideoId,currentVideoTitle);
       }else{
-        comments=comments.map(function(x){return x.id===id?Object.assign({},x,{answered:true}):x;});
-        showToast('Publicado en YouTube');renderFeed();updateStats();
+        comments=comments.map(x=>x.id===id?{...x,answered:true}:x);
+        showToast('✓ Publicado en YouTube');renderFeed();updateStats();
       }
     }else{
-      r.json().then(function(errData){
+      r.json().then(errData=>{
         const errMsg=(errData.error||'').toLowerCase();
-        if(errMsg.indexOf('quota')>=0){showQuotaBanner();showToast('Quota de YouTube agotada');}
+        if(errMsg.includes('quota')){showQuotaBanner();showToast('⏳ Quota de YouTube agotada');}
         else showToast('Error al publicar');
-        if(btn){btn.disabled=false;btn.textContent='Publicar';}
-      }).catch(function(){showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar';}});
+        if(btn){btn.disabled=false;btn.textContent='Publicar →';}
+      }).catch(()=>{showToast('Error al publicar');if(btn){btn.disabled=false;btn.textContent='Publicar →';}});
     }
-  }catch(e){showToast('Error de conexion');if(btn){btn.disabled=false;btn.textContent='Publicar';}}
+  }catch(e){showToast('Error de conexión');if(btn){btn.disabled=false;btn.textContent='Publicar →';}}
 }
 
 function discardComment(id){
   delete suggestions[id];discardedIds.push(id);
-  fetch(BACKEND+'/state/discarded',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id})}).catch(function(){});
-  if(currentFilter==='videos'){currentVideoComments=currentVideoComments.filter(function(x){return x.id!==id;});renderVideoFeed(currentVideoId,currentVideoTitle);}
-  else{comments=comments.filter(function(x){return x.id!==id;});renderFeed();updateStats();}
+  fetch(`${BACKEND}/state/discarded`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+  if(currentFilter==='videos'){currentVideoComments=currentVideoComments.filter(x=>x.id!==id);renderVideoFeed(currentVideoId,currentVideoTitle);}
+  else{comments=comments.filter(x=>x.id!==id);renderFeed();updateStats();}
 }
 
 function skipComment(id){
   delete suggestions[id];suggestingNow.delete(id);
   if(currentFilter==='videos'){
-    const c=currentVideoComments.find(function(x){return x.id===id;});
-    if(c){currentVideoComments=currentVideoComments.filter(function(x){return x.id!==id;}).concat([c]);renderVideoFeed(currentVideoId,currentVideoTitle);setTimeout(function(){fetchSuggestion(id,c.text);},100);}
+    const c=currentVideoComments.find(x=>x.id===id);
+    if(c){currentVideoComments=currentVideoComments.filter(x=>x.id!==id);currentVideoComments.push(c);renderVideoFeed(currentVideoId,currentVideoTitle);setTimeout(()=>fetchSuggestion(id,c.text),100);}
   }else{
-    const c=comments.find(function(x){return x.id===id;});
-    if(c){comments=comments.filter(function(x){return x.id!==id;}).concat([c]);renderFeed();setTimeout(function(){fetchSuggestion(id,c.text);},100);}
+    const c=comments.find(x=>x.id===id);
+    if(c){comments=comments.filter(x=>x.id!==id);comments.push(c);renderFeed();setTimeout(()=>fetchSuggestion(id,c.text),100);}
   }
 }
 
 function updateStats(){
-  const p=comments.filter(function(c){return !c.answered&&fbSendState[c.id]!=='sending'&&fbSendState[c.id]!=='ok';}).length;
-  const a=comments.filter(function(c){return c.answered||fbSendState[c.id]==='ok';}).length;
+  const p=comments.filter(c=>!c.answered&&fbSendState[c.id]!=='sending'&&fbSendState[c.id]!=='ok').length;
+  const a=comments.filter(c=>c.answered||fbSendState[c.id]==='ok').length;
   document.getElementById('stat-pending').textContent=p;
   document.getElementById('stat-answered').textContent=a;
   document.getElementById('stat-total').textContent=comments.length;
-  document.getElementById('pending-count').textContent=p+' pendiente'+(p!==1?'s':'');
+  document.getElementById('pending-count').textContent=`${p} pendiente${p!==1?'s':''}`;
 }
 
 async function loadVideos(){
@@ -508,44 +563,44 @@ async function loadVideos(){
   feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando videos...</div>';
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(BACKEND+'/channel/videos',{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=data.videos||[];videosPageToken=data.nextPageToken;currentVideoIndex=0;
     if(videosList.length>0)loadVideoComments(videosList[0].id,videosList[0].title);
-    else feed.innerHTML='<div class="empty-state"><span class="emoji">ok</span>No hay videos</div>';
+    else feed.innerHTML='<div class="empty-state"><span class="emoji">🎬</span>No hay videos</div>';
   }catch(e){
-    if(e.message&&e.message.toLowerCase().indexOf('quota')>=0)showQuotaBanner();
-    else feed.innerHTML='<div class="empty-state"><span class="emoji">!</span>Error cargando videos</div>';
+    if(e.message&&e.message.toLowerCase().includes('quota'))showQuotaBanner();
+    else feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando videos</div>';
   }
 }
 
-async function loadVideoComments(videoId,videoTitle,pageToken){
+async function loadVideoComments(videoId,videoTitle,pageToken=null){
   currentVideoId=videoId;currentVideoTitle=videoTitle;
   const feed=document.getElementById('feed');
-  if(!pageToken){currentVideoComments=[];feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando "'+esc(videoTitle)+'"...</div>';}
+  if(!pageToken){currentVideoComments=[];feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando "${esc(videoTitle)}"...</div>`;}
   try{
     const token=localStorage.getItem('yt_token');
-    const url=BACKEND+'/video/'+videoId+'/comments'+(pageToken?'?pageToken='+pageToken:'');
+    const url=`${BACKEND}/video/${videoId}/comments${pageToken?'?pageToken='+pageToken:''}`;
     const r=await fetch(url,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
-    const newComments=(data.comments||[]).filter(function(c){return !c.answered&&!discardedIds.includes(c.id);});
-    currentVideoComments=currentVideoComments.concat(newComments);
+    const newComments=(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id));
+    currentVideoComments=[...currentVideoComments,...newComments];
     currentVideoPageToken=data.nextPageToken;videoTitles[videoId]=videoTitle;
     renderVideoFeed(videoId,videoTitle);
-  }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">!</span>Error cargando comentarios</div>';}
+  }catch(e){feed.innerHTML='<div class="empty-state"><span class="emoji">⚠️</span>Error cargando comentarios</div>';}
 }
 
 function renderVideoFeed(videoId,videoTitle){
   const feed=document.getElementById('feed');
-  const pending=currentVideoComments.filter(function(c){return !c.answered;});
-  let html='<div class="video-header">Video: <a href="https://www.youtube.com/watch?v='+videoId+'" target="_blank">'+esc(videoTitle)+'</a><span>'+pending.length+' pendientes</span></div>';
-  html+=pending.length===0?'<div class="empty-state"><span class="emoji">ok</span>Todo respondido en este video</div>':pending.map(buildCard).join('');
+  const pending=currentVideoComments.filter(c=>!c.answered);
+  let html=`<div class="video-header">📹 <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">${esc(videoTitle)}</a><span>${pending.length} pendientes</span></div>`;
+  html+=pending.length===0?'<div class="empty-state"><span class="emoji">✅</span>Todo respondido en este video</div>':pending.map(c=>buildCard(c)).join('');
   feed.innerHTML=html;
   let nav='<div style="display:flex;gap:8px;padding:0 0 12px;flex-wrap:wrap;">';
-  if(currentVideoPageToken)nav+='<button class="load-more" onclick="loadVideoComments(\''+videoId+'\',\''+videoTitle.replace(/'/g,"\\'")+'\',\''+currentVideoPageToken+'\')">Cargar mas comentarios</button>';
-  nav+='<button class="load-more" onclick="nextVideo()">Siguiente video</button></div>';
+  if(currentVideoPageToken)nav+=`<button class="load-more" onclick="loadVideoComments('${videoId}','${videoTitle.replace(/'/g,"\\'")}','${currentVideoPageToken}')">Cargar más comentarios</button>`;
+  nav+=`<button class="load-more" onclick="nextVideo()">Siguiente video →</button></div>`;
   document.getElementById('load-more-container').innerHTML=nav;
-  pending.forEach(function(c){if(suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
+  pending.forEach(c=>{if(suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
 }
 
@@ -554,24 +609,24 @@ async function nextVideo(){
   if(currentVideoIndex<videosList.length){loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);}
   else if(videosPageToken){
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(BACKEND+'/channel/videos?pageToken='+videosPageToken,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
-    videosList=videosList.concat(data.videos||[]);videosPageToken=data.nextPageToken;
+    videosList=[...videosList,...(data.videos||[])];videosPageToken=data.nextPageToken;
     if(videosList[currentVideoIndex])loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);
   }else{
-    document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">ok</span>Revisaste todos los videos!</div>';
+    document.getElementById('feed').innerHTML='<div class="empty-state"><span class="emoji">🎉</span>Revisaste todos los videos!</div>';
     document.getElementById('load-more-container').innerHTML='';
   }
 }
 
-function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
 
-(function(){
+(async()=>{
   const params=new URLSearchParams(window.location.search);
   if(params.get("auth")==="success"){const token=params.get("token");if(token)localStorage.setItem("yt_token",token);history.replaceState({},"","/");}
   checkYTStatus();
-  if(params.get("auth")==="success"){ytConnected=true;updateYTStatus();showToast("YouTube conectado!");}
-  if(localStorage.getItem("loggedIn")==="1"){document.getElementById("login-screen").style.display="none";document.getElementById("app").style.display="flex";loadAll();}
+  if(params.get("auth")==="success"){ytConnected=true;updateYTStatus();showToast("✓ YouTube conectado!");}
+  if(localStorage.getItem("loggedIn")==="1"){document.getElementById("login-screen").style.display="none";document.getElementById("app").style.display="flex";initApp();}
 })();
 </script>
 </body>
