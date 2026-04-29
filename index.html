@@ -269,7 +269,8 @@ async function loadAll(){
   try{const sr=await fetch(`${BACKEND_YT}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-  await Promise.all([loadYTComments(),loadFBComments()]);
+  await loadYTComments();
+loadFBComments().catch(()=>{});
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   renderFeed();
   updateStats();
