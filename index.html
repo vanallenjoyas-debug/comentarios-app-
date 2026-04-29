@@ -156,10 +156,11 @@
     <div class="connected-accounts" id="connected-accounts"></div>
   </div>
   <div class="filter-bar">
-    <div class="filter-chip active" onclick="setFilter('yt',this)">▶️ YouTube</div>
+    <div class="filter-chip active" onclick="setFilter('all',this)">Todos</div>
+    <div class="filter-chip" onclick="setFilter('yt',this)">▶️ YouTube</div>
     <div class="filter-chip" onclick="setFilter('fb',this)">📘 Facebook</div>
-    <div class="filter-chip" onclick="setFilter('videos',this)">🎬 Videos viejos</div>
     <div class="filter-chip" onclick="setFilter('answered',this)">✓ Respondidos</div>
+    <div class="filter-chip" onclick="setFilter('videos',this)">🎬 Videos viejos</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -171,9 +172,7 @@
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const BACKEND_YT='https://comentarios-backend-production.up.railway.app';
-const BACKEND_FB='https://comentarios-backend-fb-production.up.railway.app';
-const BACKEND=BACKEND_YT;
+const BACKEND='https://comentarios-backend-production.up.railway.app';
 const USERS={"moderador":"sudaca2024","javi":"vanallen2024"};
 const CORRECT_YT_HANDLE='@vanallenjoyas';
 const QUICK_REPLIES=[
@@ -195,7 +194,7 @@ const QUICK_REPLIES=[
   'es buena idea, lo tomo para hacer un video en el futuro, gracias 👍',
 ];
 
-let currentFilter='yt';
+let currentFilter='all';
 let comments=[], answeredIds=[], discardedIds=[];
 let nextPageToken=null, fbNextCursor=null, ytConnected=false;
 let videoTitles={};
@@ -228,7 +227,7 @@ async function checkYTStatus(){
   try{
     const token=localStorage.getItem('yt_token');
     if(!token){ytConnected=false;updateYTStatus();updateAccountDisplays(null,null);return;}
-    const r=await fetch(`${BACKEND_YT}/auth/status`,{credentials:'include',headers:{'X-YT-Token':token}});
+    const r=await fetch(`${BACKEND}/auth/status`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();
     ytConnected=d.authenticated;
     updateYTStatus();
@@ -240,7 +239,7 @@ async function checkYTStatus(){
 async function loadChannelInfo(){
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND_YT}/auth/channel`,{credentials:'include',headers:{'X-YT-Token':token}});
+    const r=await fetch(`${BACKEND}/auth/channel`,{credentials:'include',headers:{'X-YT-Token':token}});
     const d=await r.json();
     updateAccountDisplays(d.name,d.handle);
   }catch(e){updateAccountDisplays(null,null);}
@@ -260,17 +259,16 @@ function updateAccountDisplays(ytName,ytHandle){
 }
 
 function updateYTStatus(){const el=document.getElementById('yt-status');if(ytConnected){el.className='yt-status connected';el.textContent='✓ YouTube conectado';}else{el.className='yt-status disconnected';el.textContent='▶️ YouTube no conectado';}}
-async function connectYouTube(){try{const r=await fetch(`${BACKEND_YT}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
+async function connectYouTube(){try{const r=await fetch(`${BACKEND}/auth/youtube`,{credentials:'include'});const d=await r.json();window.location.href=d.url;}catch(e){showToast('Error al conectar YouTube');}}
 function doLogin(){const u=document.getElementById('login-user').value.trim().toLowerCase();const p=document.getElementById('login-pass').value;if(USERS[u]&&USERS[u]===p){localStorage.setItem('loggedIn','1');document.getElementById('login-error').style.display='none';document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='flex';loadAll();}else{document.getElementById('login-error').style.display='block';document.getElementById('login-pass').value='';}}
 function doLogout(){localStorage.removeItem('loggedIn');document.getElementById('app').style.display='none';document.getElementById('login-screen').style.display='flex';}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 
 async function loadAll(){
-  try{const sr=await fetch(`${BACKEND_YT}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
+  try{const sr=await fetch(`${BACKEND}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
-  await loadYTComments();
-loadFBComments().catch(()=>{});
+  await Promise.all([loadYTComments(),loadFBComments()]);
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   renderFeed();
   updateStats();
@@ -301,7 +299,7 @@ async function loadYTComments(pageToken=null){
   if(!ytConnected)return;
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND_YT}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/comments${pageToken?'?pageToken='+pageToken:''}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     if(r.status===401)return;
     const data=await r.json();
     if(data.error&&data.error.toLowerCase().includes('quota')){showQuotaBanner();return;}
@@ -314,7 +312,7 @@ async function loadYTComments(pageToken=null){
 
 async function loadFBComments(){
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments`);
+    const r=await fetch(`${BACKEND}/fb/comments`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
@@ -331,7 +329,7 @@ async function loadFBComments(){
 async function loadMoreFB(){
   if(!fbNextCursor)return;
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments?after=${fbNextCursor}`);
+    const r=await fetch(`${BACKEND}/fb/comments?after=${fbNextCursor}`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
@@ -349,7 +347,7 @@ async function loadVideoTitles(cs){
     if(videoTitles[id])continue;
     try{
       const token=localStorage.getItem('yt_token');
-      const r=await fetch(`${BACKEND_YT}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+      const r=await fetch(`${BACKEND}/video/${id}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
       const d=await r.json();
       videoTitles[id]=d.title;
     }catch(e){}
@@ -371,7 +369,7 @@ async function fetchSuggestion(id,text){
   const ta=document.getElementById('reply-'+id);
   if(ta){ta.placeholder='✨ Generando sugerencia...';ta.classList.add('loading-suggestion');}
   try{
-    const r=await fetch(`${BACKEND_YT}/suggest-reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:text})});
+    const r=await fetch(`${BACKEND}/suggest-reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({comment:text})});
     const data=await r.json();
     if(data.suggestion){
       suggestions[id]=data.suggestion;
@@ -407,18 +405,18 @@ function renderFeed(){
     if(currentFilter==='fb')return !c.answered&&c.network==='fb';
     return !c.answered;
   });
-  if(currentFilter==='fb'){
+  if(currentFilter==='all'||currentFilter==='fb'){
     const fbSending=comments.filter(c=>c.network==='fb'&&(fbSendState[c.id]==='sending'||fbSendState[c.id]==='error')&&!f.find(x=>x.id===c.id));
     f=[...f,...fbSending];
   }
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
   let loadMoreHTML='';
-  if(currentFilter==='fb'){
+  if(currentFilter==='all'||currentFilter==='fb'){
     loadMoreHTML+=`<button class="btn-refresh-fb" onclick="refreshFB()">📘 Actualizar Facebook</button>`;
     if(fbNextCursor){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;}
   }
-  if(nextPageToken&&(currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
+  if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
@@ -484,11 +482,11 @@ async function retrySendFB(id){
   fbSendState[id]='sending';
   updateCardState(id);
   try{
-    const r=await fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pending)});
+    const r=await fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(pending)});
     if(r.ok){
       fbSendState[id]='ok';
       answeredIds.push(id);
-      fetch(`${BACKEND_YT}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText:pending.commentText,replyText:pending.text})}).catch(()=>{});
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText:pending.commentText,replyText:pending.text})}).catch(()=>{});
       const c=comments.find(x=>x.id===id);
       if(c)c.answered=true;
       delete fbPendingReplies[id];
@@ -528,11 +526,11 @@ async function sendReply(id,network){
     const card=document.getElementById('card-'+id);
     if(card)card.outerHTML=buildCard(c);
     updateStats();
-    fetch(`${BACKEND_FB}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
+    fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
       if(r.ok){
         fbSendState[id]='ok';
         answeredIds.push(id);
-        fetch(`${BACKEND_YT}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
+        fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
         if(c)c.answered=true;
         delete fbPendingReplies[id];
         showToast('✓ Publicado en Facebook');
@@ -555,10 +553,10 @@ async function sendReply(id,network){
     const token=localStorage.getItem('yt_token');
     const headers={'Content-Type':'application/json'};
     if(token)headers['X-YT-Token']=token;
-    const r=await fetch(`${BACKEND_YT}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle})});
+    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle})});
     if(r.ok){
       answeredIds.push(id);
-      fetch(`${BACKEND_YT}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
+      fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
       if(currentFilter==='videos'){
         if(c)c.answered=true;
         showToast('✓ Publicado en YouTube');
@@ -582,7 +580,7 @@ async function sendReply(id,network){
 function discardComment(id){
   delete suggestions[id];
   discardedIds.push(id);
-  fetch(`${BACKEND_YT}/state/discarded`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
+  fetch(`${BACKEND}/state/discarded`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})}).catch(()=>{});
   if(currentFilter==='videos'){
     currentVideoComments=currentVideoComments.filter(x=>x.id!==id);
     renderVideoFeed(currentVideoId,currentVideoTitle);
@@ -619,7 +617,7 @@ async function loadVideos(){
   feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando videos...</div>';
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND_YT}/channel/videos`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=data.videos||[];videosPageToken=data.nextPageToken;currentVideoIndex=0;
     if(videosList.length>0)loadVideoComments(videosList[0].id,videosList[0].title);
@@ -636,7 +634,7 @@ async function loadVideoComments(videoId,videoTitle,pageToken=null){
   if(!pageToken){currentVideoComments=[];feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando "${esc(videoTitle)}"...</div>`;}
   try{
     const token=localStorage.getItem('yt_token');
-    const url=`${BACKEND_YT}/video/${videoId}/comments${pageToken?'?pageToken='+pageToken:''}`;
+    const url=`${BACKEND}/video/${videoId}/comments${pageToken?'?pageToken='+pageToken:''}`;
     const r=await fetch(url,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     const newComments=(data.comments||[]).filter(c=>!c.answered&&!discardedIds.includes(c.id));
@@ -666,7 +664,7 @@ async function nextVideo(){
   if(currentVideoIndex<videosList.length){loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);}
   else if(videosPageToken){
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND_YT}/channel/videos?pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=[...videosList,...(data.videos||[])];videosPageToken=data.nextPageToken;
     if(videosList[currentVideoIndex])loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);
