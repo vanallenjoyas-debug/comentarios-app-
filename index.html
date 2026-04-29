@@ -518,7 +518,7 @@ async function sendReply(id,network){
   const text=ta?ta.value.trim():'';
   if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
   const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
-  const c=comments.find(x=>x.id===id);
+  const c=currentFilter==='videos'?currentVideoComments.find(x=>x.id===id):comments.find(x=>x.id===id);
   const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
   if(network==='fb'){
     fbSendState[id]='sending';
