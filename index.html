@@ -523,8 +523,7 @@ async function sendReply(id,network){
   if(network==='fb'){
     fbSendState[id]='sending';
     fbPendingReplies[id]={text,commentText,videoTitle};
-    const card=document.getElementById('card-'+id);
-    if(card)card.outerHTML=buildCard(c);
+    renderFeed();
     updateStats();
     fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle})}).then(async r=>{
       if(r.ok){
