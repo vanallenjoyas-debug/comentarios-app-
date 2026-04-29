@@ -280,8 +280,8 @@ async function loadAll(){
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
   await Promise.all([loadYTComments(),loadFBComments()]);
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-  const savedFilter = restoreFilter();
-  if(savedFilter === 'videos') loadVideos();
+  const savedFilter=restoreFilter();
+  if(savedFilter==='videos') loadVideos();
   else renderFeed();
   updateStats();
 }
@@ -530,16 +530,22 @@ async function sendReply(id,network){
   const ta=document.getElementById('reply-'+id);
   const text=ta?ta.value.trim():'';
   if(!text){ta.style.borderColor='var(--red)';setTimeout(()=>ta.style.borderColor='',1000);return;}
+  const userEdited=!!(ta&&ta.dataset.edited);
   const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
   const c=comments.find(x=>x.id===id);
   const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
   if(network==='fb'){
     fbSendState[id]='sending';
-    fbPendingReplies[id]={text,commentText,videoTitle};
+    fbPendingReplies[id]={text,commentText,videoTitle,userEdited};
     const card=document.getElementById('card-'+id);
     if(card)card.outerHTML=buildCard(c);
     updateStats();
-    fetch(`${BACKEND}/fb/comments/${id}/reply`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({text,commentText,videoTitle,userEdited:!!(ta?.dataset.edited)})}).then(async r=>{
+    fetch(`${BACKEND}/fb/comments/${id}/reply`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      credentials:'include',
+      body:JSON.stringify({text,commentText,videoTitle,userEdited})
+    }).then(async r=>{
       if(r.ok){
         fbSendState[id]='ok';
         answeredIds.push(id);
@@ -566,7 +572,12 @@ async function sendReply(id,network){
     const token=localStorage.getItem('yt_token');
     const headers={'Content-Type':'application/json'};
     if(token)headers['X-YT-Token']=token;
-    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{method:'POST',headers,credentials:'include',body:JSON.stringify({text,commentText,videoTitle,userEdited:!!(ta?.dataset.edited)});
+    const r=await fetch(`${BACKEND}/comments/${id}/reply`,{
+      method:'POST',
+      headers,
+      credentials:'include',
+      body:JSON.stringify({text,commentText,videoTitle,userEdited})
+    });
     if(r.ok){
       answeredIds.push(id);
       fetch(`${BACKEND}/state/answered`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,commentText,replyText:text})}).catch(()=>{});
