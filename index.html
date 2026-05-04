@@ -82,6 +82,9 @@
   .reply-input:focus { border-color: var(--accent2); }
   .reply-input::placeholder { color: var(--text3); }
   .reply-input.loading-suggestion { border-color: var(--accent2); opacity: 0.6; }
+  .textarea-wrap { position: relative; }
+  .btn-clear-suggestion { position: absolute; top: 6px; right: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 50%; width: 20px; height: 20px; font-size: 11px; color: var(--text3); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
+  .btn-clear-suggestion:hover { color: var(--red); border-color: var(--red); }
   .quick-replies { display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0; }
   .quick-reply { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; font-size: 12px; color: var(--text2); cursor: pointer; white-space: nowrap; font-family: 'DM Sans', sans-serif; }
   .quick-reply:hover { border-color: var(--accent2); color: var(--accent); }
@@ -219,6 +222,12 @@ function restoreFilter(){
   return saved;
 }
 
+function clearSuggestion(id){
+  const ta=document.getElementById('reply-'+id);
+  if(ta){ta.value='';delete ta.dataset.edited;ta.focus();}
+  delete suggestions[id];
+  suggestingNow.delete(id);
+}
 function setQuickReply(id,text){const ta=document.getElementById('reply-'+id);if(ta){ta.value=text;ta.dataset.edited='1';ta.focus();}}
 function appendEmoji(id,emoji){const ta=document.getElementById('reply-'+id);if(ta){ta.value=(ta.value||'')+emoji;ta.dataset.edited='1';ta.focus();}}
 
@@ -471,7 +480,10 @@ function buildCard(c){
   } else {
     bottomSection=`
       <div class="reply-area">
-        <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
+        <div class="textarea-wrap">
+          <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
+          <button class="btn-clear-suggestion" onclick="clearSuggestion('${c.id}')" title="Borrar sugerencia">✕</button>
+        </div>
         <div class="quick-replies">${emojiBtns}<button class="btn-send" style="margin-left:auto" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button></div>
         <div class="quick-replies">${quickBtns}</div>
         <div class="reply-actions">
