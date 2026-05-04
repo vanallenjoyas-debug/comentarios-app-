@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -158,7 +157,7 @@
   <div class="filter-bar">
     <div class="filter-chip" data-filter="yt" onclick="setFilter('yt',this)">▶️ YouTube</div>
     <div class="filter-chip" data-filter="fb" onclick="setFilter('fb',this)">📘 Facebook</div>
-    <div class="filter-chip" data-filter="videos" onclick="setFilter('videos',this)">🎬 Videos viejos</div>
+    <div class="filter-chip" data-filter="videos" onclick="setFilter('videos',this)">📹 Videos largos</div>
     <div class="filter-chip" data-filter="answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
@@ -647,7 +646,7 @@ async function loadVideos(){
   feed.innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando videos...</div>';
   try{
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND}/channel/videos`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos?duration=long`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=data.videos||[];videosPageToken=data.nextPageToken;currentVideoIndex=0;
     if(videosList.length>0)loadVideoComments(videosList[0].id,videosList[0].title);
@@ -694,7 +693,7 @@ async function nextVideo(){
   if(currentVideoIndex<videosList.length){loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);}
   else if(videosPageToken){
     const token=localStorage.getItem('yt_token');
-    const r=await fetch(`${BACKEND}/channel/videos?pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
+    const r=await fetch(`${BACKEND}/channel/videos?duration=long&pageToken=${videosPageToken}`,{credentials:'include',headers:token?{'X-YT-Token':token}:{}});
     const data=await r.json();
     videosList=[...videosList,...(data.videos||[])];videosPageToken=data.nextPageToken;
     if(videosList[currentVideoIndex])loadVideoComments(videosList[currentVideoIndex].id,videosList[currentVideoIndex].title);
