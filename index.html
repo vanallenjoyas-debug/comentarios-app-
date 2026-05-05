@@ -441,9 +441,8 @@ function renderFeed(){
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
   let loadMoreHTML='';
-  if(currentFilter==='all'||currentFilter==='fb'){
-    loadMoreHTML+=`<button class="btn-refresh-fb" onclick="refreshFB()">📘 Actualizar Facebook</button>`;
-    if(fbNextCursor){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;}
+  if(fbNextCursor&&(currentFilter==='all'||currentFilter==='fb')){
+    loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;
   }
   if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
