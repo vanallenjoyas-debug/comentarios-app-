@@ -361,7 +361,8 @@ async function loadMoreFB(){
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
-    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    const existingIds=new Set(comments.map(c=>c.id));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)&&!existingIds.has(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
     comments=[...comments,...nc];
     comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
     renderFeed();
