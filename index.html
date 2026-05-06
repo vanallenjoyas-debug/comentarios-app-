@@ -291,8 +291,7 @@ async function loadAll(){
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
   await Promise.all([
   loadYTComments().catch(e=>console.error('YT falló, reintentando...', e)),
-  loadFBComments(),
-  loadIGComments()
+  loadFBComments()
 ]);
 // Retry YT si no cargó
 if(ytConnected && comments.filter(c=>c.network==='yt').length===0){
@@ -418,12 +417,20 @@ async function loadVideoTitles(cs){
   if(currentFilter!=='videos')renderFeed();
 }
 
+let igLoaded=false;
 function setFilter(net,el){
   currentFilter=net;
   saveFilter(net);
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   if(net==='videos'){loadVideos();}
+  else if(net==='ig'&&!igLoaded){
+    igLoaded=true;
+    loadIGComments().then(()=>{
+      comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+      renderFeed();updateStats();
+    });
+  }
   else{renderFeed();}
 }
 
