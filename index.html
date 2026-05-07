@@ -71,7 +71,6 @@
   .username { font-weight: 600; font-size: 14px; }
   .network-label { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
   .network-label.fb { color: #1877f2; }
-  .network-label.ig { color: #e1306c; }
   .timestamp { font-size: 11px; color: var(--text3); margin-left: auto; }
   .post-ref { font-size: 12px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .post-ref a { color: var(--accent2); text-decoration: none; }
@@ -163,7 +162,6 @@
   <div class="filter-bar">
     <div class="filter-chip" data-filter="yt" onclick="setFilter('yt',this)">▶️ YouTube</div>
     <div class="filter-chip" data-filter="fb" onclick="setFilter('fb',this)">📘 Facebook</div>
-    <div class="filter-chip" data-filter="ig" onclick="setFilter('ig',this)">📸 Instagram</div>
     <div class="filter-chip" data-filter="videos" onclick="setFilter('videos',this)">📹 Videos largos</div>
     <div class="filter-chip" data-filter="answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
   </div>
@@ -201,7 +199,7 @@ const QUICK_REPLIES=[
 
 let currentFilter='all';
 let comments=[], answeredIds=[], discardedIds=[];
-let nextPageToken=null, fbNextCursor=null, igNextCursor=null, ytConnected=false;
+let nextPageToken=null, fbNextCursor=null, ytConnected=false;
 let videoTitles={};
 let videosList=[], videosPageToken=null, currentVideoIndex=0;
 let currentVideoComments=[], currentVideoId='', currentVideoTitle='', currentVideoPageToken=null;
@@ -358,49 +356,17 @@ async function loadFBComments(){
 
 async function loadMoreFB(){
   if(!fbNextCursor)return;
-  const btn=document.querySelector('.load-more[onclick="loadMoreFB()"]');
-  if(btn){btn.disabled=true;btn.textContent='Cargando...';}
   try{
     const r=await fetch(`${BACKEND}/fb/comments?after=${fbNextCursor}`,{credentials:'include'});
     if(!r.ok)return;
     const data=await r.json();
     fbNextCursor=data.nextCursor||null;
-    const existingIds=new Set(comments.map(c=>c.id));
-    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)&&!existingIds.has(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
+    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
     comments=[...comments,...nc];
     comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
     renderFeed();
     updateStats();
   }catch(e){console.error('FB load more error',e);}
-}
-
-async function loadIGComments(){
-  try{
-    const r=await fetch(`${BACKEND}/ig/comments`,{credentials:'include'});
-    if(!r.ok)return;
-    const data=await r.json();
-    igNextCursor=data.nextCursor||null;
-    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
-    comments=[...comments.filter(c=>c.network!=='ig'),...nc];
-  }catch(e){console.error('IG load error',e);}
-}
-
-async function loadMoreIG(){
-  if(!igNextCursor)return;
-  const btn=document.querySelector('.load-more[onclick="loadMoreIG()"]');
-  if(btn){btn.disabled=true;btn.textContent='Cargando...';}
-  try{
-    const r=await fetch(`${BACKEND}/ig/comments?after=${igNextCursor}`,{credentials:'include'});
-    if(!r.ok)return;
-    const data=await r.json();
-    igNextCursor=data.nextCursor||null;
-    const existingIds=new Set(comments.map(c=>c.id));
-    const nc=data.comments.filter(c=>!discardedIds.includes(c.id)&&!existingIds.has(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
-    comments=[...comments,...nc];
-    comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-    renderFeed();
-    updateStats();
-  }catch(e){console.error('IG load more error',e);}
 }
 
 async function loadVideoTitles(cs){
@@ -417,21 +383,12 @@ async function loadVideoTitles(cs){
   if(currentFilter!=='videos')renderFeed();
 }
 
-let igLoaded=false;
 function setFilter(net,el){
   currentFilter=net;
   saveFilter(net);
   document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   if(net==='videos'){loadVideos();}
-  else if(net==='ig'&&!igLoaded){
-    igLoaded=true;
-    loadIGComments().then(()=>{
-      comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-      if(comments.filter(c=>c.network==='ig').length===0) igLoaded=false;
-      renderFeed();updateStats();
-    });
-  }
   else{renderFeed();}
 }
 
@@ -475,7 +432,6 @@ function renderFeed(){
     if(currentFilter==='answered')return c.answered;
     if(currentFilter==='yt')return !c.answered&&c.network==='yt';
     if(currentFilter==='fb')return !c.answered&&c.network==='fb';
-    if(currentFilter==='ig')return !c.answered&&c.network==='ig';
     return !c.answered;
   });
   if(currentFilter==='all'||currentFilter==='fb'){
@@ -485,11 +441,9 @@ function renderFeed(){
   if(f.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">${currentFilter==='answered'?'✅':'🎉'}</span>${currentFilter==='answered'?'Nada respondido aún':'Todo al día!'}</div>`;}
   else{feed.innerHTML=f.map(c=>buildCard(c)).join('');}
   let loadMoreHTML='';
-  if(fbNextCursor&&(currentFilter==='all'||currentFilter==='fb')){
-    loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;
-  }
-  if(igNextCursor&&(currentFilter==='all'||currentFilter==='ig')){
-    loadMoreHTML+=`<button class="load-more" onclick="loadMoreIG()">Cargar más de Instagram →</button>`;
+  if(currentFilter==='all'||currentFilter==='fb'){
+    loadMoreHTML+=`<button class="btn-refresh-fb" onclick="refreshFB()">📘 Actualizar Facebook</button>`;
+    if(fbNextCursor){loadMoreHTML+=`<button class="load-more" onclick="loadMoreFB()">Cargar más de Facebook →</button>`;}
   }
   if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
@@ -497,24 +451,16 @@ function renderFeed(){
   setupObserver();
 }
 
-async function loadMoreYT(){
-  const btn=document.querySelector('.load-more[onclick="loadMoreYT()"]');
-  if(btn){btn.disabled=true;btn.textContent='Cargando...';}
-  await loadYTComments(nextPageToken);
-  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-  renderFeed();
-  updateStats();
-}
+async function loadMoreYT(){await loadYTComments(nextPageToken);comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}
 
 function buildCard(c){
   const t=formatTime(c.publishedAt);
   const isFB=c.network==='fb';
-  const isIG=c.network==='ig';
-  const networkLabel=isFB?'Facebook':isIG?'Instagram':'YouTube';
+  const networkLabel=isFB?'Facebook':'YouTube';
   const sendState=isFB?fbSendState[c.id]:null;
   let refHTML='';
-  if(isFB||isIG){
-    const msg=c.postMessage?c.postMessage.substring(0,60)+'...':networkLabel;
+  if(isFB){
+    const msg=c.postMessage?c.postMessage.substring(0,60)+'...':'Facebook';
     refHTML=esc(msg);
   } else {
     const title=videoTitles[c.videoId]||'YouTube';
@@ -535,7 +481,7 @@ function buildCard(c){
     bottomSection=`
       <div class="reply-area">
         <div class="textarea-wrap">
-          <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply('${c.id}','${c.network}');}"></textarea>
+          <textarea class="reply-input" id="reply-${c.id}" placeholder="Escribí tu respuesta..." rows="3" oninput="this.dataset.edited='1'"></textarea>
           <button class="btn-clear-suggestion" onclick="clearSuggestion('${c.id}')" title="Borrar sugerencia">✕</button>
         </div>
         <div class="quick-replies">${emojiBtns}<button class="btn-send" style="margin-left:auto" onclick="sendReply('${c.id}','${c.network}')">Publicar →</button></div>
@@ -547,12 +493,12 @@ function buildCard(c){
         </div>
       </div>`;
   }
-  const cardClass=`comment-card ${c.answered?'answered':''} ${isFB?'fb':''} ${isIG?'ig':''} ${sendState==='sending'?'fb-sending':''}`;
+  const cardClass=`comment-card ${c.answered?'answered':''} ${isFB?'fb':''} ${sendState==='sending'?'fb-sending':''}`;
   return `<div class="${cardClass}" id="card-${c.id}" data-comment-id="${c.id}">
     <div class="card-top">
       <img class="author-photo" src="${c.authorPhoto||''}" onerror="this.style.display='none'">
       <div class="card-meta">
-        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':isIG?'ig':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
+        <div class="card-meta-top"><span class="username">${esc(c.author)}</span><span class="network-label ${isFB?'fb':''}">${networkLabel}</span><span class="timestamp">${t}</span></div>
         <div class="post-ref">${refHTML}</div>
       </div>
     </div>
@@ -607,23 +553,6 @@ async function sendReply(id,network){
   const commentText=document.querySelector('#card-'+id+' .comment-text')?.textContent||'';
   const c=comments.find(x=>x.id===id);
   const videoTitle=c?.videoId?videoTitles[c.videoId]||'':'';
-  if(network==='ig'){
-    const btn=document.querySelector('#card-'+id+' .btn-send');
-    if(btn){btn.disabled=true;btn.textContent='Publicando...';}
-    try{
-      const r=await fetch(`${BACKEND}/ig/comments/${id}/reply`,{
-        method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',
-        body:JSON.stringify({text,commentText,postMessage:c?.postMessage||'',userEdited})
-      });
-      if(r.ok){
-        answeredIds.push(id);
-        if(c)c.answered=true;
-        showToast('✓ Publicado en Instagram');
-        renderFeed();updateStats();
-      } else {showToast('⚠ Error al publicar en Instagram');}
-    }catch(e){showToast('⚠ Error de conexión con Instagram');}
-    return;
-  }
   if(network==='fb'){
     fbSendState[id]='sending';
     fbPendingReplies[id]={text,commentText,videoTitle,userEdited};
