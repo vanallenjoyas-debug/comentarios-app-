@@ -428,7 +428,6 @@ function setFilter(net,el){
     igLoaded=true;
     loadIGComments().then(()=>{
       comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-      if(comments.filter(c=>c.network==='ig').length===0) igLoaded=false;
       renderFeed();updateStats();
     });
   }
