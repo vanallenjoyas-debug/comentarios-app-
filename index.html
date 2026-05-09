@@ -166,6 +166,7 @@
     <div class="filter-chip" data-filter="ig" onclick="setFilter('ig',this)">📸 Instagram</div>
     <div class="filter-chip" data-filter="videos" onclick="setFilter('videos',this)">📹 Videos largos</div>
     <div class="filter-chip" data-filter="answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
+    <div class="filter-chip" data-filter="fb-old" onclick="setFilter('fb-old',this)">🗂 Viejos FB</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -418,6 +419,18 @@ async function loadVideoTitles(cs){
 }
 
 let igLoaded=false;
+let fbOldLoaded=false;
+let fbOldComments=[];
+
+async function loadOldFBComments(){
+  try{
+    const r=await fetch(`${BACKEND}/fb/comments/old`,{credentials:'include'});
+    if(!r.ok)return;
+    const data=await r.json();
+    fbOldComments=data.comments.filter(c=>!discardedIds.includes(c.id)).map(c=>({...c,answered:answeredIds.includes(c.id)}));
+  }catch(e){console.error('FB old load error',e);}
+}
+
 function setFilter(net,el){
   currentFilter=net;
   saveFilter(net);
@@ -430,6 +443,12 @@ function setFilter(net,el){
       comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
       renderFeed();updateStats();
     });
+  }
+  else if(net==='fb-old'&&!fbOldLoaded){
+    fbOldLoaded=true;
+    const feed=document.getElementById('feed');
+    feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando viejos...</div>`;
+    loadOldFBComments().then(()=>{renderFeed();});
   }
   else{renderFeed();}
 }
@@ -470,6 +489,12 @@ function setupObserver(){
 
 function renderFeed(){
   const feed=document.getElementById('feed');
+  if(currentFilter==='fb-old'){
+    if(fbOldComments.length===0){feed.innerHTML=`<div class="empty-state"><span class="emoji">🗂</span>No hay comentarios viejos sin responder</div>`;}
+    else{feed.innerHTML=fbOldComments.map(c=>buildCard(c)).join('');}
+    setupObserver();
+    return;
+  }
   let f=comments.filter(c=>{
     if(currentFilter==='answered')return c.answered;
     if(currentFilter==='yt')return !c.answered&&c.network==='yt';
