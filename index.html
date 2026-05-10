@@ -116,6 +116,46 @@
   .video-header span { font-size: 12px; color: var(--text3); margin-left: 8px; }
   .btn-refresh-fb { background: none; border: 1px solid #1877f244; border-radius: var(--radius-sm); padding: 8px 16px; color: #5599ff; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; margin: 0 16px 8px; display: block; }
   .btn-refresh-fb:hover { border-color: #1877f2; }
+
+  /* AGENTE */
+  .agent-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 12px 16px; }
+  .agent-stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+  .agent-stat-card .val { font-family: 'DM Mono', monospace; font-size: 24px; font-weight: 500; color: var(--accent); }
+  .agent-stat-card .lbl { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .agent-actions { display: flex; gap: 8px; padding: 0 16px 12px; flex-wrap: wrap; }
+  .btn-agent-run { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-agent-run:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-agent-secondary { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 18px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .agent-section-title { padding: 8px 16px; font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; border-top: 1px solid var(--border); margin-top: 4px; }
+  .queue-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent2); border-radius: var(--radius); overflow: hidden; margin: 0 16px 10px; }
+  .queue-card-top { padding: 12px 14px 8px; }
+  .queue-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .queue-author { font-weight: 600; font-size: 13px; }
+  .queue-confidence { font-size: 11px; font-family: 'DM Mono', monospace; padding: 2px 8px; border-radius: 10px; margin-left: auto; }
+  .queue-confidence.high { background: rgba(74,222,128,0.15); color: var(--green); }
+  .queue-confidence.med { background: rgba(232,213,163,0.15); color: var(--accent); }
+  .queue-confidence.low { background: rgba(248,113,113,0.15); color: var(--red); }
+  .queue-post { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .queue-comment { font-size: 14px; line-height: 1.4; padding: 8px 14px; background: var(--surface2); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .queue-reply-area { padding: 10px 14px; }
+  .queue-reply-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.4; resize: none; outline: none; min-height: 60px; -webkit-appearance: none; }
+  .queue-reply-input:focus { border-color: var(--accent2); }
+  .queue-actions { display: flex; gap: 8px; margin-top: 8px; }
+  .btn-approve { background: var(--green); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 9px 16px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; flex: 1; }
+  .btn-reject { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .btn-reject:hover { border-color: var(--red); color: var(--red); }
+  .btn-discard-queue { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .variations-list { display: flex; flex-direction: column; gap: 6px; padding: 8px 14px 10px; }
+  .variation-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; text-align: left; line-height: 1.4; }
+  .variation-btn:hover { border-color: var(--accent2); }
+  .agent-run-log { padding: 8px 16px 12px; }
+  .run-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; color: var(--text2); }
+  .run-row:last-child { border-bottom: none; }
+  .run-time { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text3); min-width: 60px; }
+  .run-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .run-pill { background: var(--surface2); border-radius: 10px; padding: 2px 8px; font-size: 11px; font-family: 'DM Mono', monospace; }
+  .run-pill.green { color: var(--green); }
+  .run-pill.yellow { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -167,6 +207,7 @@
     <div class="filter-chip" data-filter="videos" onclick="setFilter('videos',this)">📹 Videos largos</div>
     <div class="filter-chip" data-filter="answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
     <div class="filter-chip" data-filter="fb-old" onclick="setFilter('fb-old',this)">🗂 Viejos FB</div>
+    <div class="filter-chip" data-filter="agent" onclick="setFilter('agent',this)">🤖 Agente</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -824,3 +865,186 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
 </script>
 </body>
 </html>
+<script>
+// PATCH — agente: agregar filter handler y funciones
+
+// Guardar referencia original de setFilter
+const _setFilterOrig = setFilter;
+function setFilter(net, el) {
+  if (net === 'agent') {
+    currentFilter = 'agent';
+    saveFilter('agent');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadAgentView();
+    return;
+  }
+  _setFilterOrig(net, el);
+}
+
+let agentQueue = [], agentStats = null;
+
+async function loadAgentView() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando agente...</div>';
+  document.getElementById('load-more-container').innerHTML = '';
+  try {
+    const [statsRes, queueRes] = await Promise.all([
+      fetch(`${BACKEND}/agent/stats`),
+      fetch(`${BACKEND}/agent/queue`)
+    ]);
+    agentStats = await statsRes.json();
+    const queueData = await queueRes.json();
+    agentQueue = queueData.queue || [];
+    renderAgentView();
+  } catch (e) {
+    feed.innerHTML = '<div class="empty-state"><span class="emoji">⚠️</span>Error cargando agente</div>';
+  }
+}
+
+function renderAgentView() {
+  const feed = document.getElementById('feed');
+  const s = agentStats || {};
+  const lastRun = s.recent_runs?.[0];
+  const lastRunTime = lastRun ? formatTime(lastRun.started_at) : 'nunca';
+
+  let html = `
+    <div class="agent-stats-grid">
+      <div class="agent-stat-card"><span class="val">${s.total_auto_replied||0}</span><span class="lbl">Auto-respondidos</span></div>
+      <div class="agent-stat-card"><span class="val">${s.pending_review||0}</span><span class="lbl">En cola</span></div>
+      <div class="agent-stat-card"><span class="val">${s.total_learned_examples||0}</span><span class="lbl">Aprendidos</span></div>
+      <div class="agent-stat-card"><span class="val">${lastRunTime}</span><span class="lbl">Último ciclo</span></div>
+    </div>
+    <div class="agent-actions">
+      <button class="btn-agent-run" id="btn-run-agent" onclick="runAgentNow()">▶ Correr ciclo ahora</button>
+      <button class="btn-agent-secondary" onclick="loadAgentView()">↺ Actualizar</button>
+    </div>`;
+
+  if (agentQueue.length === 0) {
+    html += `<div class="empty-state"><span class="emoji">✅</span>Cola vacía — el agente respondió todo</div>`;
+  } else {
+    html += `<div class="agent-section-title">Cola de revisión — ${agentQueue.length} pendientes</div>`;
+    agentQueue.forEach(item => {
+      const conf = item.confidence || 0;
+      const confClass = conf >= 0.6 ? 'high' : conf >= 0.4 ? 'med' : 'low';
+      const confLabel = Math.round(conf * 100) + '%';
+      html += `<div class="queue-card" id="qcard-${item.id}">
+        <div class="queue-card-top">
+          <div class="queue-meta">
+            <span class="queue-author">${esc(item.author||'Usuario')}</span>
+            <span class="queue-confidence ${confClass}">conf. ${confLabel}</span>
+          </div>
+          <div class="queue-post">📄 ${esc((item.post_title||item.post_id||'').substring(0,60))}</div>
+        </div>
+        <div class="queue-comment">${esc(item.comment_text||'')}</div>
+        <div class="queue-reply-area">
+          <textarea class="queue-reply-input" id="qreply-${item.id}" rows="3">${esc(item.suggested_reply||'')}</textarea>
+          <div class="queue-actions">
+            <button class="btn-approve" onclick="approveQueueItem('${item.id}')">👍 Aprobar y publicar</button>
+            <button class="btn-reject" onclick="rejectQueueItem('${item.id}')">👎 Regenerar</button>
+            <button class="btn-discard-queue" onclick="discardQueueItem('${item.id}')">✕</button>
+          </div>
+          <div id="qvariations-${item.id}"></div>
+        </div>
+      </div>`;
+    });
+  }
+
+  if (s.recent_runs && s.recent_runs.length > 0) {
+    html += `<div class="agent-section-title">Historial de ciclos</div><div class="agent-run-log">`;
+    s.recent_runs.slice(0, 5).forEach(r => {
+      html += `<div class="run-row">
+        <span class="run-time">${formatTime(r.started_at)}</span>
+        <div class="run-pills">
+          <span class="run-pill">${r.comments_fetched||0} procesados</span>
+          <span class="run-pill green">${r.comments_auto_replied||0} auto</span>
+          <span class="run-pill yellow">${r.comments_queued||0} cola</span>
+        </div>
+        ${r.error ? `<span style="color:var(--red);font-size:11px">⚠ error</span>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  feed.innerHTML = html;
+}
+
+async function runAgentNow() {
+  const btn = document.getElementById('btn-run-agent');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Corriendo...'; }
+  showToast('Agente corriendo...');
+  try {
+    const r = await fetch(`${BACKEND}/agent/run`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ network: 'fb' }) });
+    const data = await r.json();
+    showToast(`✓ Ciclo completo — ${data.autoReplied||0} auto, ${data.queued||0} en cola`);
+    await loadAgentView();
+  } catch (e) {
+    showToast('Error corriendo el agente');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Correr ciclo ahora'; }
+  }
+}
+
+async function approveQueueItem(id) {
+  const ta = document.getElementById('qreply-' + id);
+  const text = ta ? ta.value.trim() : '';
+  if (!text) { showToast('Escribí una respuesta primero'); return; }
+  const btn = document.querySelector(`#qcard-${id} .btn-approve`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
+  try {
+    const r = await fetch(`${BACKEND}/agent/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id, replyText: text }) });
+    if (r.ok) {
+      showToast('✓ Publicado y aprendido 👍');
+      document.getElementById('qcard-' + id)?.remove();
+      agentQueue = agentQueue.filter(x => x.id !== id);
+      if (agentStats) agentStats.total_learned_examples = (agentStats.total_learned_examples || 0) + 1;
+      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review || 0) - 1);
+      renderAgentView();
+    } else {
+      showToast('Error al publicar');
+      if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
+    }
+  } catch (e) {
+    showToast('Error de conexión');
+    if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
+  }
+}
+
+async function rejectQueueItem(id) {
+  const btn = document.querySelector(`#qcard-${id} .btn-reject`);
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
+  const varDiv = document.getElementById('qvariations-' + id);
+  if (varDiv) varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">Generando variaciones...</div>';
+  try {
+    const r = await fetch(`${BACKEND}/agent/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id }) });
+    const data = await r.json();
+    const vars = data.variations || [];
+    if (varDiv) {
+      if (vars.length === 0) { varDiv.innerHTML = ''; return; }
+      varDiv.innerHTML = `<div class="variations-list">${vars.map(v => `<button class="variation-btn" onclick="selectVariation('${id}','${v.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">${esc(v)}</button>`).join('')}</div>`;
+    }
+  } catch (e) {
+    showToast('Error generando variaciones');
+    if (varDiv) varDiv.innerHTML = '';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '👎 Regenerar'; }
+  }
+}
+
+function selectVariation(id, text) {
+  const ta = document.getElementById('qreply-' + id);
+  if (ta) { ta.value = text; ta.focus(); }
+  const varDiv = document.getElementById('qvariations-' + id);
+  if (varDiv) varDiv.innerHTML = '';
+}
+
+async function discardQueueItem(id) {
+  try {
+    await fetch(`${BACKEND}/agent/discard`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id }) });
+    document.getElementById('qcard-' + id)?.remove();
+    agentQueue = agentQueue.filter(x => x.id !== id);
+    if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review || 0) - 1);
+    showToast('Descartado');
+  } catch (e) { showToast('Error al descartar'); }
+}
+</script>
