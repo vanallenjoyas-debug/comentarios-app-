@@ -258,7 +258,7 @@ const FB_ICON=`<svg width="14" height="14" viewBox="0 0 24 24" fill="#1877f2"><p
 
 function saveFilter(f){ localStorage.setItem('activeFilter', f); }
 function restoreFilter(){
-  const saved = localStorage.getItem('activeFilter') || 'yt';
+  const saved = localStorage.getItem('activeFilter') || 'agent';
   currentFilter = saved;
   document.querySelectorAll('.filter-chip').forEach(c=>{
     c.classList.toggle('active', c.dataset.filter === saved);
@@ -330,17 +330,31 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 async function loadAll(){
   try{const sr=await fetch(`${BACKEND}/state`);const sd=await sr.json();answeredIds=sd.answered||[];discardedIds=sd.discarded||[];}catch(e){}
   comments=[];
+  const savedFilter=restoreFilter();
+
+  // Si el filtro activo es 'agent', cargar agente primero y YT/FB en background sin pisar el feed
+  if(savedFilter==='agent'){
+    loadAgentView();
+    // Cargar YT y FB silenciosamente en background
+    Promise.all([
+      loadYTComments().catch(()=>{}),
+      loadFBComments().catch(()=>{})
+    ]).then(()=>{
+      comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+      updateStats();
+    });
+    return;
+  }
+
   document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando...</div>';
   await Promise.all([
-  loadYTComments().catch(e=>console.error('YT falló, reintentando...', e)),
-  loadFBComments()
-]);
-// Retry YT si no cargó
-if(ytConnected && comments.filter(c=>c.network==='yt').length===0){
-  await loadYTComments();
-}
+    loadYTComments().catch(e=>console.error('YT falló, reintentando...', e)),
+    loadFBComments()
+  ]);
+  if(ytConnected && comments.filter(c=>c.network==='yt').length===0){
+    await loadYTComments();
+  }
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-  const savedFilter=restoreFilter();
   if(savedFilter==='videos') loadVideos();
   else renderFeed();
   updateStats();
@@ -351,7 +365,7 @@ async function refreshFB(){
   fbNextCursor=null;
   await loadFBComments();
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-  renderFeed();
+  if(currentFilter!=='agent') renderFeed();
   updateStats();
 }
 
@@ -456,7 +470,7 @@ async function loadVideoTitles(cs){
       videoTitles[id]=d.title;
     }catch(e){}
   }
-  if(currentFilter!=='videos')renderFeed();
+  if(currentFilter!=='videos'&&currentFilter!=='agent')renderFeed();
 }
 
 let igLoaded=false;
@@ -932,6 +946,7 @@ function renderAgentView() {
         <div class="queue-card-top">
           <div class="queue-meta">
             <span class="queue-author">${esc(item.author||'Usuario')}</span>
+            <span style="font-size:11px;color:${item.network==='yt'?'#ff6666':'#5599ff'};font-family:'DM Mono',monospace">${item.network==='yt'?'▶ YouTube':'📘 Facebook'}</span>
             <span class="queue-confidence ${confClass}">conf. ${confLabel}</span>
           </div>
           <div class="queue-post">📄 ${esc((item.post_title||item.post_id||'').substring(0,60))}</div>
@@ -939,6 +954,9 @@ function renderAgentView() {
         <div class="queue-comment">${esc(item.comment_text||'')}</div>
         <div class="queue-reply-area">
           <textarea class="queue-reply-input" id="qreply-${item.id}" rows="3">${esc(item.suggested_reply||'')}</textarea>
+          <div style="display:flex;gap:6px;padding:6px 0;">
+            ${['🤷','🙌','🔥','😄','💪','😂','👋','👍','⚡','🫡','👌'].map(e=>`<button onclick="(function(){var ta=document.getElementById('qreply-${item.id}');if(ta){ta.value=(ta.value||'')+' ${e}';ta.focus();}})()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:15px">${e}</button>`).join('')}
+          </div>
           <div class="queue-actions">
             <button class="btn-approve" onclick="approveQueueItem('${item.id}')">👍 Aprobar y publicar</button>
             <button class="btn-reject" onclick="rejectQueueItem('${item.id}')">👎 Regenerar</button>
