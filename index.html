@@ -156,6 +156,38 @@
   .run-pill { background: var(--surface2); border-radius: 10px; padding: 2px 8px; font-size: 11px; font-family: 'DM Mono', monospace; }
   .run-pill.green { color: var(--green); }
   .run-pill.yellow { color: var(--accent); }
+
+  .history-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: var(--radius); overflow: hidden; margin: 0 16px 10px; }
+  .history-card-top { padding: 10px 14px 6px; display: flex; align-items: center; gap: 8px; }
+  .history-author { font-weight: 600; font-size: 13px; }
+  .history-time { font-size: 11px; color: var(--text3); margin-left: auto; }
+  .history-comment { font-size: 13px; color: var(--text2); padding: 6px 14px; border-top: 1px solid var(--border); }
+  .history-reply { font-size: 14px; padding: 8px 14px; border-top: 1px solid var(--border); }
+  .history-reply::before { content: '↳ '; color: var(--green); font-weight: 600; }
+  .history-actions { padding: 6px 14px 10px; display: flex; justify-content: flex-end; }
+  .btn-reject-history { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-reject-history:hover { border-color: var(--red); color: var(--red); }
+
+  .faq-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #5599ff; border-radius: var(--radius); margin: 0 16px 10px; overflow: hidden; }
+  .faq-card-header { padding: 12px 14px; display: flex; align-items: center; gap: 8px; }
+  .faq-pregunta { font-weight: 600; font-size: 14px; flex: 1; }
+  .faq-respuestas { padding: 0 14px 8px; display: flex; flex-direction: column; gap: 6px; }
+  .faq-respuesta-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 10px; font-size: 13px; display: flex; align-items: flex-start; gap: 8px; }
+  .faq-respuesta-text { flex: 1; line-height: 1.4; }
+  .faq-keywords { padding: 0 14px 10px; font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
+  .faq-actions { padding: 8px 14px 12px; display: flex; gap: 8px; border-top: 1px solid var(--border); }
+  .btn-faq-edit { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-faq-delete { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--red); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .faq-form { background: var(--surface); border: 1px solid var(--accent2); border-radius: var(--radius); margin: 0 16px 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .faq-form-title { font-size: 14px; font-weight: 600; color: var(--accent); }
+  .faq-input { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; outline: none; width: 100%; }
+  .faq-input:focus { border-color: var(--accent2); }
+  .faq-textarea { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; outline: none; width: 100%; resize: none; min-height: 80px; }
+  .faq-textarea:focus { border-color: var(--accent2); }
+  .faq-hint { font-size: 11px; color: var(--text3); }
+  .btn-faq-save { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-faq-cancel { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
+  .btn-faq-new { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin: 0 16px 12px; }
 </style>
 </head>
 <body>
@@ -208,6 +240,8 @@
     <div class="filter-chip" data-filter="answered" onclick="setFilter('answered',this)">✓ Respondidos</div>
     <div class="filter-chip" data-filter="fb-old" onclick="setFilter('fb-old',this)">🗂 Viejos FB</div>
     <div class="filter-chip" data-filter="agent" onclick="setFilter('agent',this)">🤖 Agente</div>
+    <div class="filter-chip" data-filter="agent-history" onclick="setFilter('agent-history',this)">📋 Historial IA</div>
+    <div class="filter-chip" data-filter="agent-faq" onclick="setFilter('agent-faq',this)">💬 FAQ</div>
   </div>
   <div class="feed" id="feed"><div class="loading"><div class="spinner"></div><br>Cargando...</div></div>
   <div id="load-more-container"></div>
@@ -876,6 +910,196 @@ function showToast(msg){const t=document.getElementById('toast');t.textContent=m
   if(params.get("auth")==="success"){ytConnected=true;updateYTStatus();showToast("✓ YouTube conectado!");}
   if(localStorage.getItem("loggedIn")==="1"){document.getElementById("login-screen").style.display="none";document.getElementById("app").style.display="flex";loadAll();}
 })();
+
+let agentHistory = [];
+
+async function loadAgentHistory() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando historial...</div>';
+  document.getElementById('load-more-container').innerHTML = '';
+  try {
+    const r = await fetch(BACKEND + '/agent/history');
+    const data = await r.json();
+    agentHistory = data.history || [];
+    renderAgentHistory();
+  } catch(e) {
+    feed.innerHTML = '<div class="empty-state"><span class="emoji">⚠️</span>Error cargando historial</div>';
+  }
+}
+
+function renderAgentHistory() {
+  const feed = document.getElementById('feed');
+  if (agentHistory.length === 0) {
+    feed.innerHTML = '<div class="empty-state"><span class="emoji">🤖</span>El agente no respondió nada todavía</div>';
+    return;
+  }
+  let html = '<div class="agent-section-title">' + agentHistory.length + ' respuestas automáticas</div>';
+  agentHistory.forEach(item => {
+    const t = formatTime(item.created_at);
+    html += '<div class="history-card" id="hcard-' + item.id + '">' +
+      '<div class="history-card-top">' +
+        '<span class="history-author">🤖 Auto-respondido</span>' +
+        '<span style="font-size:11px;color:var(--text3)">' + esc(item.video_title||'') + '</span>' +
+        '<span class="history-time">' + t + '</span>' +
+      '</div>' +
+      '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
+      '<div class="history-reply">' + esc(item.reply_text||'') + '</div>' +
+      '<div class="history-actions">' +
+        '<button class="btn-reject-history" onclick="rejectHistory('' + item.id + '')">👎 Estuvo mal</button>' +
+      '</div>' +
+    '</div>';
+  });
+  feed.innerHTML = html;
+}
+
+async function rejectHistory(id) {
+  try {
+    const r = await fetch(BACKEND + '/agent/history/' + id + '/reject', {method:'POST', headers:{'Content-Type':'application/json'}});
+    if (r.ok) {
+      document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
+      agentHistory = agentHistory.filter(x => x.id !== id);
+      showToast('Eliminado del aprendizaje');
+    }
+  } catch(e) { showToast('Error'); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// FAQ — preguntas frecuentes con respuestas canónicas
+// ═══════════════════════════════════════════════════════════════════
+
+let faqs = [];
+let faqEditingId = null;
+
+async function loadFAQView() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando FAQ...</div>';
+  document.getElementById('load-more-container').innerHTML = '';
+  try {
+    const r = await fetch(BACKEND + '/agent/faq');
+    const data = await r.json();
+    faqs = data.faqs || [];
+    renderFAQView();
+  } catch(e) {
+    feed.innerHTML = '<div class="empty-state"><span class="emoji">⚠️</span>Error cargando FAQ</div>';
+  }
+}
+
+function renderFAQView() {
+  const feed = document.getElementById('feed');
+  let html = '<button class="btn-faq-new" onclick="showFAQForm()">+ Nueva pregunta frecuente</button>';
+
+  if (faqs.length === 0) {
+    html += '<div class="empty-state"><span class="emoji">💬</span>No tenés FAQs cargadas todavía.<br><small>Agregá preguntas frecuentes para que el agente las responda automáticamente.</small></div>';
+  } else {
+    html += '<div class="agent-section-title">' + faqs.length + ' preguntas frecuentes</div>';
+    faqs.forEach(faq => {
+      html += '<div class="faq-card" id="faqcard-' + faq.id + '">' +
+        '<div class="faq-card-header">' +
+          '<span class="faq-pregunta">' + esc(faq.pregunta) + '</span>' +
+        '</div>' +
+        '<div class="faq-keywords">🔑 Keywords: ' + esc(faq.keywords) + '</div>' +
+        '<div class="faq-respuestas">';
+      (faq.respuestas || []).forEach((r, i) => {
+        html += '<div class="faq-respuesta-item">' +
+          '<span style="color:var(--accent2);font-size:11px;min-width:16px">' + (i+1) + '</span>' +
+          '<span class="faq-respuesta-text">' + esc(r) + '</span>' +
+        '</div>';
+      });
+      html += '</div>' +
+        '<div class="faq-actions">' +
+          '<button class="btn-faq-edit" onclick="editFAQ(' + faq.id + ')">✏️ Editar</button>' +
+          '<button class="btn-faq-delete" onclick="deleteFAQ(' + faq.id + ')">🗑 Eliminar</button>' +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  feed.innerHTML = html;
+}
+
+function showFAQForm(faqData) {
+  faqEditingId = faqData ? faqData.id : null;
+  const feed = document.getElementById('feed');
+  const respuestasText = faqData ? (faqData.respuestas || []).join('\n') : '';
+
+  feed.innerHTML = '<div class="faq-form">' +
+    '<div class="faq-form-title">' + (faqEditingId ? 'Editar pregunta' : 'Nueva pregunta frecuente') + '</div>' +
+
+    '<div>' +
+      '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:6px">PREGUNTA (descripción para vos)</label>' +
+      '<input class="faq-input" id="faq-pregunta" placeholder="Ej: Qué hacés con el ácido usado" value="' + esc(faqData ? faqData.pregunta : '') + '">' +
+    '</div>' +
+
+    '<div>' +
+      '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">KEYWORDS (separadas por coma)</label>' +
+      '<div class="faq-hint">Palabras clave para detectar esta pregunta en los comentarios</div>' +
+      '<input class="faq-input" id="faq-keywords" style="margin-top:6px" placeholder="Ej: ácido,acido,desecho,tirar,neutralizar" value="' + esc(faqData ? faqData.keywords : '') + '">' +
+    '</div>' +
+
+    '<div>' +
+      '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">RESPUESTAS (una por línea, mínimo 2)</label>' +
+      '<div class="faq-hint">El agente elige una al azar cada vez</div>' +
+      '<textarea class="faq-textarea" id="faq-respuestas" style="margin-top:6px" rows="6" placeholder="claro que no lo tiro al inodoro! El ácido se neutraliza y se almacena para entregarlo a una empresa especializada 💪&#10;jamás al desagüe! lo neutralizo y lo llevo a disposición final con empresa especializada 🙌&#10;eso nunca, se neutraliza y va a disposición final controlada 👋">' + esc(respuestasText) + '</textarea>' +
+    '</div>' +
+
+    '<div style="display:flex;gap:8px">' +
+      '<button class="btn-faq-save" onclick="saveFAQ()">Guardar</button>' +
+      '<button class="btn-faq-cancel" onclick="loadFAQView()">Cancelar</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function editFAQ(id) {
+  const faq = faqs.find(f => f.id === id);
+  if (faq) showFAQForm(faq);
+}
+
+async function saveFAQ() {
+  const pregunta = document.getElementById('faq-pregunta').value.trim();
+  const keywords = document.getElementById('faq-keywords').value.trim();
+  const respuestasRaw = document.getElementById('faq-respuestas').value.trim();
+  const respuestas = respuestasRaw.split('\n').map(r => r.trim()).filter(r => r.length > 0);
+
+  if (!pregunta || respuestas.length < 1) {
+    showToast('Completá la pregunta y al menos una respuesta');
+    return;
+  }
+
+  try {
+    let r;
+    if (faqEditingId) {
+      r = await fetch(BACKEND + '/agent/faq/' + faqEditingId, {
+        method: 'PUT',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({pregunta, keywords, respuestas})
+      });
+    } else {
+      r = await fetch(BACKEND + '/agent/faq', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({pregunta, keywords, respuestas})
+      });
+    }
+    if (r.ok) {
+      showToast(faqEditingId ? '✓ FAQ actualizada' : '✓ FAQ creada');
+      faqEditingId = null;
+      await loadFAQView();
+    } else {
+      showToast('Error guardando FAQ');
+    }
+  } catch(e) { showToast('Error de conexión'); }
+}
+
+async function deleteFAQ(id) {
+  try {
+    const r = await fetch(BACKEND + '/agent/faq/' + id, {method: 'DELETE'});
+    if (r.ok) {
+      faqs = faqs.filter(f => f.id !== id);
+      document.getElementById('faqcard-' + id) && document.getElementById('faqcard-' + id).remove();
+      showToast('FAQ eliminada');
+    }
+  } catch(e) { showToast('Error'); }
+}
 </script>
 </body>
 </html>
@@ -891,6 +1115,22 @@ function setFilter(net, el) {
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
     loadAgentView();
+    return;
+  }
+  if (net === 'agent-history') {
+    currentFilter = 'agent-history';
+    saveFilter('agent-history');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadAgentHistory();
+    return;
+  }
+  if (net === 'agent-faq') {
+    currentFilter = 'agent-faq';
+    saveFilter('agent-faq');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadFAQView();
     return;
   }
   _setFilterOrig(net, el);
