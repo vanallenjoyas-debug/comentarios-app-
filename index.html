@@ -957,6 +957,7 @@ function renderAgentHistory() {
         '<button class="btn-rate-ok" onclick="rateHistory(\'' + item.id + '\',\'ok\')">✅ Correcta</button>' +
         '<button class="btn-rate-fix" onclick="showCorrection(\'' + item.id + '\',\'mejorable\')">⚠️ Mejorable</button>' +
         '<button class="btn-rate-bad" onclick="showCorrection(\'' + item.id + '\',\'mal\')">❌ Mal</button>' +
+        '<button class="btn-discard-queue" onclick="discardHistory(\'' + item.id + '\')">✕ Descartar</button>' +
       '</div>' +
       '<div class="history-correction" id="hcorrection-' + item.id + '">' +
         '<textarea id="hcorrection-text-' + item.id + '" rows="2" placeholder="¿Cómo lo hubieras respondido vos?"></textarea>' +
@@ -1006,6 +1007,16 @@ async function saveCorrection(id) {
 
 async function rejectHistory(id) {
   await rateHistory(id, 'mal', '');
+}
+
+async function discardHistory(id) {
+  try {
+    await fetch(BACKEND + '/agent/history/' + id + '/reject', {method:'POST', headers:{'Content-Type':'application/json'}});
+    document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
+    agentHistory = agentHistory.filter(x => x.id !== id);
+    showToast('Descartado');
+    if (agentHistory.length === 0) renderAgentHistory();
+  } catch(e) { showToast('Error'); }
 }
 
 // ═══════════════════════════════════════════════════════════════════
