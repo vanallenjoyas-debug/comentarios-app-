@@ -966,6 +966,7 @@ function renderAgentHistory() {
       '<div class="history-card-top">' +
         '<span style="font-weight:600;font-size:13px">🤖 Auto-respondido</span>' +
         '<span style="font-size:11px;color:var(--text3)">' + esc(item.video_title||'') + '</span>' +
+        (item.post_url ? '<a href="' + item.post_url + '" target="_blank" style="font-size:11px;color:var(--accent2);margin-left:auto">Ver post →</a>' : '') +
         '<span class="history-time">' + t + '</span>' +
       '</div>' +
       '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
@@ -1277,7 +1278,7 @@ function renderAgentView() {
             <span style="font-size:11px;color:${item.network==='yt'?'#ff6666':'#5599ff'};font-family:'DM Mono',monospace">${item.network==='yt'?'▶ YouTube':'📘 Facebook'}</span>
             <span class="queue-confidence ${confClass}">conf. ${confLabel}</span>
           </div>
-          <div class="queue-post">📄 ${esc((item.post_title||item.post_id||'').substring(0,60))}</div>
+          <div class="queue-post">📄 ${esc((item.post_title||item.post_id||'').substring(0,60))}${item.post_url ? ' <a href="' + item.post_url + '" target="_blank" style="color:var(--accent2);font-size:11px;margin-left:4px">Ver post →</a>' : ''}</div>
         </div>
         <div class="queue-comment">${esc(item.comment_text||'')}</div>
         <div class="queue-reply-area">
