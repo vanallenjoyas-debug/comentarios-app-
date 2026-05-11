@@ -539,6 +539,9 @@ function setFilter(net,el){
     feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando viejos...</div>`;
     loadOldFBComments().then(()=>{renderFeed();});
   }
+  else if(net==='agent'){loadAgentView();}
+  else if(net==='agent-history'){loadAgentHistory();}
+  else if(net==='agent-faq'){loadFAQView();}
   else{renderFeed();}
 }
 
