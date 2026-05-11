@@ -1197,10 +1197,17 @@ function renderAgentView() {
           <div style="display:flex;gap:6px;padding:6px 0;">
             ${['🤷','🙌','🔥','😄','💪','😂','👋','👍','⚡','🫡','👌'].map(e=>`<button onclick="(function(){var ta=document.getElementById('qreply-${item.id}');if(ta){ta.value=(ta.value||'')+' ${e}';ta.focus();}})()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:15px">${e}</button>`).join('')}
           </div>
-          <div class="queue-actions">
-            <button class="btn-approve" onclick="approveQueueItem('${item.id}')">👍 Aprobar y publicar</button>
-            <button class="btn-reject" onclick="rejectQueueItem('${item.id}')">👎 Regenerar</button>
+          <div class="queue-actions" style="flex-wrap:wrap;gap:6px">
+            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px" onclick="approveWithFeedback('${item.id}','ok')">Publicar</button>
+            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px;background:var(--accent2)" onclick="approveWithFeedback('${item.id}','repetitiva')">Repetitiva</button>
+            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px;background:#666" onclick="approveWithFeedback('${item.id}','bot')">Suena a bot</button>
+            <button class="btn-reject" style="font-size:12px;padding:8px 12px" onclick="rejectBetter('${item.id}')">Buscá mejor</button>
+            <button class="btn-reject" style="font-size:12px;padding:8px 12px;border-color:var(--red);color:var(--red)" onclick="toggleDisaster('${item.id}')">Un desastre</button>
             <button class="btn-discard-queue" onclick="discardQueueItem('${item.id}')">✕</button>
+          </div>
+          <div id="qdisaster-${item.id}" style="display:none;padding:8px 0 4px">
+            <textarea class="queue-reply-input" id="qdisaster-text-${item.id}" rows="2" placeholder="Escribí cómo lo hubieras respondido vos..."></textarea>
+            <button class="btn-approve" style="margin-top:6px;font-size:12px;padding:8px 14px" onclick="saveDisaster('${item.id}')">Guardar y publicar</button>
           </div>
           <div id="qvariations-${item.id}"></div>
         </div>
@@ -1243,53 +1250,76 @@ async function runAgentNow() {
   }
 }
 
-async function approveQueueItem(id) {
+async function approveWithFeedback(id, feedback) {
   const ta = document.getElementById('qreply-' + id);
   const text = ta ? ta.value.trim() : '';
   if (!text) { showToast('Escribí una respuesta primero'); return; }
-  const btn = document.querySelector(`#qcard-${id} .btn-approve`);
-  if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
   try {
-    const r = await fetch(`${BACKEND}/agent/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id, replyText: text }) });
+    const r = await fetch(`${BACKEND}/agent/approve`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({commentId: id, replyText: text, feedback})
+    });
     if (r.ok) {
-      showToast('✓ Publicado y aprendido 👍');
-      document.getElementById('qcard-' + id)?.remove();
+      const msg = feedback === 'ok' ? '✓ Publicado y aprendido 👍' :
+                  feedback === 'repetitiva' ? '✓ Publicado — anotado: repetitiva' :
+                  '✓ Publicado — anotado: tono de bot';
+      showToast(msg);
+      document.getElementById('qcard-'+id)?.remove();
       agentQueue = agentQueue.filter(x => x.id !== id);
-      if (agentStats) agentStats.total_learned_examples = (agentStats.total_learned_examples || 0) + 1;
-      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review || 0) - 1);
+      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review||0) - 1);
       renderAgentView();
-    } else {
-      showToast('Error al publicar');
-      if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
-    }
-  } catch (e) {
-    showToast('Error de conexión');
-    if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
-  }
+    } else { showToast('Error al publicar'); }
+  } catch(e) { showToast('Error de conexión'); }
 }
 
-async function rejectQueueItem(id) {
-  const btn = document.querySelector(`#qcard-${id} .btn-reject`);
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
-  const varDiv = document.getElementById('qvariations-' + id);
-  if (varDiv) varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">Generando variaciones...</div>';
+function toggleDisaster(id) {
+  const div = document.getElementById('qdisaster-' + id);
+  if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveDisaster(id) {
+  const ta = document.getElementById('qdisaster-text-' + id);
+  const text = ta ? ta.value.trim() : '';
+  if (!text) { showToast('Escribí tu respuesta primero'); return; }
   try {
-    const r = await fetch(`${BACKEND}/agent/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id }) });
+    const r = await fetch(`${BACKEND}/agent/approve`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({commentId: id, replyText: text, feedback: 'desastre_corregido'})
+    });
+    if (r.ok) {
+      showToast('✓ Guardado y publicado — aprendizaje máximo 💪');
+      document.getElementById('qcard-'+id)?.remove();
+      agentQueue = agentQueue.filter(x => x.id !== id);
+      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review||0) - 1);
+      renderAgentView();
+    } else { showToast('Error al publicar'); }
+  } catch(e) { showToast('Error de conexión'); }
+}
+
+async function rejectBetter(id) {
+  const btn = document.querySelector(`#qcard-${id} .btn-reject`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+  const varDiv = document.getElementById('qvariations-' + id);
+  if (varDiv) varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">Buscando variaciones...</div>';
+  try {
+    const r = await fetch(`${BACKEND}/agent/reject`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({commentId: id, reason: 'busca_mejor'})
+    });
     const data = await r.json();
     const vars = data.variations || [];
     if (varDiv) {
-      if (vars.length === 0) { varDiv.innerHTML = ''; return; }
-      varDiv.innerHTML = `<div class="variations-list">${vars.map(v => `<button class="variation-btn" onclick="selectVariation('${id}','${v.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">${esc(v)}</button>`).join('')}</div>`;
+      if (vars.length === 0) { varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">No encontré variaciones</div>'; return; }
+      varDiv.innerHTML = '<div class="variations-list">' + vars.map(v =>
+        `<button class="variation-btn" onclick="selectVariation('${id}', this.dataset.v)" data-v="${v.replace(/"/g,'&quot;')}">${esc(v)}</button>`
+      ).join('') + '</div>';
     }
-  } catch (e) {
-    showToast('Error generando variaciones');
-    if (varDiv) varDiv.innerHTML = '';
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = '👎 Regenerar'; }
-  }
+  } catch(e) { showToast('Error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Buscá mejor'; } }
 }
 
-function selectVariation(id, text) {
+function selectVariation(id, btn) {
+  const text = typeof btn === 'string' ? btn : btn.dataset.v;
   const ta = document.getElementById('qreply-' + id);
   if (ta) { ta.value = text; ta.focus(); }
   const varDiv = document.getElementById('qvariations-' + id);
