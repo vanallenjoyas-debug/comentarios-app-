@@ -408,7 +408,7 @@ async function refreshFB(){
   fbNextCursor=null;
   await loadFBComments();
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-  if(currentFilter!=='agent') renderFeed();
+  if(currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq') renderFeed();
   updateStats();
 }
 
@@ -513,7 +513,7 @@ async function loadVideoTitles(cs){
       videoTitles[id]=d.title;
     }catch(e){}
   }
-  if(currentFilter!=='videos'&&currentFilter!=='agent')renderFeed();
+  if(currentFilter!=='videos'&&currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq')renderFeed();
 }
 
 let igLoaded=false;
@@ -539,16 +539,16 @@ function setFilter(net,el){
     igLoaded=true;
     loadIGComments().then(()=>{
       comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
-      renderFeed();updateStats();
+      if(currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq'){renderFeed();updateStats();}
     });
   }
   else if(net==='fb-old'&&!fbOldLoaded){
     fbOldLoaded=true;
     const feed=document.getElementById('feed');
     feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando viejos...</div>`;
-    loadOldFBComments().then(()=>{renderFeed();});
+    loadOldFBComments().then(()=>{if(currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq')renderFeed();});
   }
-  else{renderFeed();}
+  else if(currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq'){renderFeed();}
 }
 
 async function fetchSuggestion(id,text){
