@@ -945,7 +945,7 @@ function renderAgentHistory() {
       '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
       '<div class="history-reply">' + esc(item.reply_text||'') + '</div>' +
       '<div class="history-actions">' +
-        '<button class="btn-reject-history" onclick="rejectHistory(\'' + item.id + '\')">👎 Estuvo mal</button>' +
+        '<button class="btn-reject-history" onclick="rejectHistory('' + item.id + '')">👎 Estuvo mal</button>' +
       '</div>' +
     '</div>';
   });
