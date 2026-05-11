@@ -616,7 +616,10 @@ function renderFeed(){
   if(igNextCursor&&(currentFilter==='all'||currentFilter==='ig')){
     loadMoreHTML+=`<button class="load-more" onclick="loadMoreIG()">Cargar más de Instagram →</button>`;
   }
-  if(nextPageToken&&(currentFilter==='all'||currentFilter==='yt')){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
+  if(currentFilter==='yt'||currentFilter==='all'){
+    if(nextPageToken){loadMoreHTML+=`<button class="load-more" onclick="loadMoreYT()">Cargar más de YouTube →</button>`;}
+    else if(currentFilter==='yt'){loadMoreHTML+=`<button class="load-more" onclick="reloadYT()">↺ Recargar YouTube</button>`;}
+  }
   document.getElementById('load-more-container').innerHTML=loadMoreHTML;
   f.forEach(c=>{if(!c.answered&&suggestions[c.id]){const ta=document.getElementById('reply-'+c.id);if(ta&&!ta.dataset.edited)ta.value=suggestions[c.id];}});
   setupObserver();
@@ -626,6 +629,17 @@ async function loadMoreYT(){
   const btn=document.querySelector('.load-more[onclick="loadMoreYT()"]');
   if(btn){btn.disabled=true;btn.textContent='Cargando...';}
   await loadYTComments(nextPageToken);
+  comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
+  renderFeed();
+  updateStats();
+}
+
+async function reloadYT(){
+  const btn=document.querySelector('.load-more[onclick="reloadYT()"]');
+  if(btn){btn.disabled=true;btn.textContent='Cargando...';}
+  comments=comments.filter(c=>c.network!=='yt');
+  nextPageToken=null;
+  await loadYTComments();
   comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));
   renderFeed();
   updateStats();
