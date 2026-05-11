@@ -542,6 +542,9 @@ function setFilter(net,el){
       if(currentFilter!=='agent'&&currentFilter!=='agent-history'&&currentFilter!=='agent-faq'){renderFeed();updateStats();}
     });
   }
+  else if(net==='agent'){loadAgentView();}
+  else if(net==='agent-history'){loadAgentHistory();}
+  else if(net==='agent-faq'){loadFAQView();}
   else if(net==='fb-old'&&!fbOldLoaded){
     fbOldLoaded=true;
     const feed=document.getElementById('feed');
@@ -1209,34 +1212,6 @@ async function deleteFAQ(id) {
 // PATCH — agente: agregar filter handler y funciones
 
 // Guardar referencia original de setFilter
-const _setFilterOrig = setFilter;
-function setFilter(net, el) {
-  if (net === 'agent') {
-    currentFilter = 'agent';
-    saveFilter('agent');
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    loadAgentView();
-    return;
-  }
-  if (net === 'agent-history') {
-    currentFilter = 'agent-history';
-    saveFilter('agent-history');
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    loadAgentHistory();
-    return;
-  }
-  if (net === 'agent-faq') {
-    currentFilter = 'agent-faq';
-    saveFilter('agent-faq');
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
-    loadFAQView();
-    return;
-  }
-  _setFilterOrig(net, el);
-}
 
 let agentQueue = [], agentStats = null;
 
