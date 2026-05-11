@@ -188,6 +188,15 @@
   .btn-faq-save { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 10px 20px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-faq-cancel { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 16px; color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; }
   .btn-faq-new { background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 10px 18px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin: 0 16px 12px; }
+
+  .history-rating { display: flex; gap: 6px; padding: 8px 14px 10px; flex-wrap: wrap; }
+  .btn-rate-ok { background: var(--green); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 7px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
+  .btn-rate-fix { background: none; border: 1px solid var(--accent); border-radius: var(--radius-sm); padding: 7px 14px; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .btn-rate-bad { background: none; border: 1px solid var(--red); border-radius: var(--radius-sm); padding: 7px 14px; color: var(--red); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
+  .history-correction { display: none; padding: 0 14px 10px; }
+  .history-correction textarea { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px 12px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; resize: none; outline: none; min-height: 50px; }
+  .history-correction textarea:focus { border-color: var(--accent2); }
+  .history-correction button { margin-top: 6px; background: var(--accent); color: #0f0f0f; border: none; border-radius: var(--radius-sm); padding: 7px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -538,23 +547,6 @@ function setFilter(net,el){
     const feed=document.getElementById('feed');
     feed.innerHTML=`<div class="loading"><div class="spinner"></div><br>Cargando viejos...</div>`;
     loadOldFBComments().then(()=>{renderFeed();});
-  }
-  else if(net==='agent'){loadAgentView();}
-  else if(net==='agent-history'){loadAgentHistory();}
-  else if(net==='agent-faq'){loadFAQView();}
-  else if(net==='yt'){
-    const ytComments=comments.filter(c=>c.network==='yt');
-    if(ytComments.length===0){
-      document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando YouTube...</div>';
-      loadYTComments().then(()=>{comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}).catch(()=>{});
-    } else { renderFeed(); }
-  }
-  else if(net==='fb'){
-    const fbComments=comments.filter(c=>c.network==='fb');
-    if(fbComments.length===0){
-      document.getElementById('feed').innerHTML='<div class="loading"><div class="spinner"></div><br>Cargando Facebook...</div>';
-      loadFBComments().then(()=>{comments.sort((a,b)=>new Date(b.publishedAt)-new Date(a.publishedAt));renderFeed();updateStats();}).catch(()=>{});
-    } else { renderFeed(); }
   }
   else{renderFeed();}
 }
@@ -935,7 +927,7 @@ async function loadAgentHistory() {
   feed.innerHTML = '<div class="loading"><div class="spinner"></div><br>Cargando historial...</div>';
   document.getElementById('load-more-container').innerHTML = '';
   try {
-    const r = await fetch(BACKEND + '/agent/history');
+    const r = await fetch(BACKEND + '/agent/history?unrated=1');
     const data = await r.json();
     agentHistory = data.history || [];
     renderAgentHistory();
@@ -947,37 +939,73 @@ async function loadAgentHistory() {
 function renderAgentHistory() {
   const feed = document.getElementById('feed');
   if (agentHistory.length === 0) {
-    feed.innerHTML = '<div class="empty-state"><span class="emoji">🤖</span>El agente no respondió nada todavía</div>';
+    feed.innerHTML = '<div class="empty-state"><span class="emoji">✅</span>Todo calificado — no quedan respuestas sin revisar</div>';
     return;
   }
-  let html = '<div class="agent-section-title">' + agentHistory.length + ' respuestas automáticas</div>';
+  let html = '<div class="agent-section-title">' + agentHistory.length + ' respuestas para calificar</div>';
   agentHistory.forEach(item => {
     const t = formatTime(item.created_at);
     html += '<div class="history-card" id="hcard-' + item.id + '">' +
       '<div class="history-card-top">' +
-        '<span class="history-author">🤖 Auto-respondido</span>' +
+        '<span style="font-weight:600;font-size:13px">🤖 Auto-respondido</span>' +
         '<span style="font-size:11px;color:var(--text3)">' + esc(item.video_title||'') + '</span>' +
         '<span class="history-time">' + t + '</span>' +
       '</div>' +
       '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
       '<div class="history-reply">' + esc(item.reply_text||'') + '</div>' +
-      '<div class="history-actions">' +
-        '<button class="btn-reject-history" onclick="rejectHistory(\'' + item.id + '\')">👎 Estuvo mal</button>' +
+      '<div class="history-rating">' +
+        '<button class="btn-rate-ok" onclick="rateHistory(\'' + item.id + '\',\'ok\')">✅ Correcta</button>' +
+        '<button class="btn-rate-fix" onclick="showCorrection(\'' + item.id + '\',\'mejorable\')">⚠️ Mejorable</button>' +
+        '<button class="btn-rate-bad" onclick="showCorrection(\'' + item.id + '\',\'mal\')">❌ Mal</button>' +
+      '</div>' +
+      '<div class="history-correction" id="hcorrection-' + item.id + '">' +
+        '<textarea id="hcorrection-text-' + item.id + '" rows="2" placeholder="¿Cómo lo hubieras respondido vos?"></textarea>' +
+        '<button onclick="saveCorrection(\'' + item.id + '\')">Guardar y aprender</button>' +
       '</div>' +
     '</div>';
   });
   feed.innerHTML = html;
 }
 
-async function rejectHistory(id) {
+function showCorrection(id, rating) {
+  // Store rating on the element
+  const div = document.getElementById('hcorrection-' + id);
+  if (div) {
+    div.style.display = 'block';
+    div.dataset.rating = rating;
+    const ta = document.getElementById('hcorrection-text-' + id);
+    if (ta) ta.focus();
+  }
+}
+
+async function rateHistory(id, rating, correction) {
   try {
-    const r = await fetch(BACKEND + '/agent/history/' + id + '/reject', {method:'POST', headers:{'Content-Type':'application/json'}});
+    const r = await fetch(BACKEND + '/agent/history/' + id + '/rate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({rating, correction: correction || ''})
+    });
     if (r.ok) {
       document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
       agentHistory = agentHistory.filter(x => x.id !== id);
-      showToast('Eliminado del aprendizaje');
-    }
-  } catch(e) { showToast('Error'); }
+      const msg = rating === 'ok' ? '✅ Reforzado el aprendizaje' :
+                  rating === 'mejorable' ? '⚠️ Corrección guardada' : '❌ Error registrado — gracias';
+      showToast(msg);
+      if (agentHistory.length === 0) renderAgentHistory();
+    } else { showToast('Error al calificar'); }
+  } catch(e) { showToast('Error de conexión'); }
+}
+
+async function saveCorrection(id) {
+  const div = document.getElementById('hcorrection-' + id);
+  const ta = document.getElementById('hcorrection-text-' + id);
+  const rating = div ? div.dataset.rating : 'mal';
+  const correction = ta ? ta.value.trim() : '';
+  if (!correction) { showToast('Escribí tu corrección primero'); return; }
+  await rateHistory(id, rating, correction);
+}
+
+async function rejectHistory(id) {
+  await rateHistory(id, 'mal', '');
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1124,6 +1152,34 @@ async function deleteFAQ(id) {
 // PATCH — agente: agregar filter handler y funciones
 
 // Guardar referencia original de setFilter
+const _setFilterOrig = setFilter;
+function setFilter(net, el) {
+  if (net === 'agent') {
+    currentFilter = 'agent';
+    saveFilter('agent');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadAgentView();
+    return;
+  }
+  if (net === 'agent-history') {
+    currentFilter = 'agent-history';
+    saveFilter('agent-history');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadAgentHistory();
+    return;
+  }
+  if (net === 'agent-faq') {
+    currentFilter = 'agent-faq';
+    saveFilter('agent-faq');
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    loadFAQView();
+    return;
+  }
+  _setFilterOrig(net, el);
+}
 
 let agentQueue = [], agentStats = null;
 
@@ -1186,17 +1242,10 @@ function renderAgentView() {
           <div style="display:flex;gap:6px;padding:6px 0;">
             ${['🤷','🙌','🔥','😄','💪','😂','👋','👍','⚡','🫡','👌'].map(e=>`<button onclick="(function(){var ta=document.getElementById('qreply-${item.id}');if(ta){ta.value=(ta.value||'')+' ${e}';ta.focus();}})()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:15px">${e}</button>`).join('')}
           </div>
-          <div class="queue-actions" style="flex-wrap:wrap;gap:6px">
-            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px" onclick="approveWithFeedback('${item.id}','ok')">Publicar</button>
-            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px;background:var(--accent2)" onclick="approveWithFeedback('${item.id}','repetitiva')">Repetitiva</button>
-            <button class="btn-approve" style="flex:none;font-size:12px;padding:8px 12px;background:#666" onclick="approveWithFeedback('${item.id}','bot')">Suena a bot</button>
-            <button class="btn-reject" style="font-size:12px;padding:8px 12px" onclick="rejectBetter('${item.id}')">Buscá mejor</button>
-            <button class="btn-reject" style="font-size:12px;padding:8px 12px;border-color:var(--red);color:var(--red)" onclick="toggleDisaster('${item.id}')">Un desastre</button>
+          <div class="queue-actions">
+            <button class="btn-approve" onclick="approveQueueItem('${item.id}')">👍 Aprobar y publicar</button>
+            <button class="btn-reject" onclick="rejectQueueItem('${item.id}')">👎 Regenerar</button>
             <button class="btn-discard-queue" onclick="discardQueueItem('${item.id}')">✕</button>
-          </div>
-          <div id="qdisaster-${item.id}" style="display:none;padding:8px 0 4px">
-            <textarea class="queue-reply-input" id="qdisaster-text-${item.id}" rows="2" placeholder="Escribí cómo lo hubieras respondido vos..."></textarea>
-            <button class="btn-approve" style="margin-top:6px;font-size:12px;padding:8px 14px" onclick="saveDisaster('${item.id}')">Guardar y publicar</button>
           </div>
           <div id="qvariations-${item.id}"></div>
         </div>
@@ -1239,76 +1288,53 @@ async function runAgentNow() {
   }
 }
 
-async function approveWithFeedback(id, feedback) {
+async function approveQueueItem(id) {
   const ta = document.getElementById('qreply-' + id);
   const text = ta ? ta.value.trim() : '';
   if (!text) { showToast('Escribí una respuesta primero'); return; }
+  const btn = document.querySelector(`#qcard-${id} .btn-approve`);
+  if (btn) { btn.disabled = true; btn.textContent = 'Publicando...'; }
   try {
-    const r = await fetch(`${BACKEND}/agent/approve`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({commentId: id, replyText: text, feedback})
-    });
+    const r = await fetch(`${BACKEND}/agent/approve`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id, replyText: text }) });
     if (r.ok) {
-      const msg = feedback === 'ok' ? '✓ Publicado y aprendido 👍' :
-                  feedback === 'repetitiva' ? '✓ Publicado — anotado: repetitiva' :
-                  '✓ Publicado — anotado: tono de bot';
-      showToast(msg);
-      document.getElementById('qcard-'+id)?.remove();
+      showToast('✓ Publicado y aprendido 👍');
+      document.getElementById('qcard-' + id)?.remove();
       agentQueue = agentQueue.filter(x => x.id !== id);
-      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review||0) - 1);
+      if (agentStats) agentStats.total_learned_examples = (agentStats.total_learned_examples || 0) + 1;
+      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review || 0) - 1);
       renderAgentView();
-    } else { showToast('Error al publicar'); }
-  } catch(e) { showToast('Error de conexión'); }
+    } else {
+      showToast('Error al publicar');
+      if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
+    }
+  } catch (e) {
+    showToast('Error de conexión');
+    if (btn) { btn.disabled = false; btn.textContent = '👍 Aprobar y publicar'; }
+  }
 }
 
-function toggleDisaster(id) {
-  const div = document.getElementById('qdisaster-' + id);
-  if (div) div.style.display = div.style.display === 'none' ? 'block' : 'none';
-}
-
-async function saveDisaster(id) {
-  const ta = document.getElementById('qdisaster-text-' + id);
-  const text = ta ? ta.value.trim() : '';
-  if (!text) { showToast('Escribí tu respuesta primero'); return; }
-  try {
-    const r = await fetch(`${BACKEND}/agent/approve`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({commentId: id, replyText: text, feedback: 'desastre_corregido'})
-    });
-    if (r.ok) {
-      showToast('✓ Guardado y publicado — aprendizaje máximo 💪');
-      document.getElementById('qcard-'+id)?.remove();
-      agentQueue = agentQueue.filter(x => x.id !== id);
-      if (agentStats) agentStats.pending_review = Math.max(0, (agentStats.pending_review||0) - 1);
-      renderAgentView();
-    } else { showToast('Error al publicar'); }
-  } catch(e) { showToast('Error de conexión'); }
-}
-
-async function rejectBetter(id) {
+async function rejectQueueItem(id) {
   const btn = document.querySelector(`#qcard-${id} .btn-reject`);
-  if (btn) { btn.disabled = true; btn.textContent = 'Buscando...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Generando...'; }
   const varDiv = document.getElementById('qvariations-' + id);
-  if (varDiv) varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">Buscando variaciones...</div>';
+  if (varDiv) varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">Generando variaciones...</div>';
   try {
-    const r = await fetch(`${BACKEND}/agent/reject`, {
-      method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({commentId: id, reason: 'busca_mejor'})
-    });
+    const r = await fetch(`${BACKEND}/agent/reject`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId: id }) });
     const data = await r.json();
     const vars = data.variations || [];
     if (varDiv) {
-      if (vars.length === 0) { varDiv.innerHTML = '<div style="padding:8px;color:var(--text3);font-size:12px">No encontré variaciones</div>'; return; }
-      varDiv.innerHTML = '<div class="variations-list">' + vars.map(v =>
-        `<button class="variation-btn" onclick="selectVariation('${id}', this.dataset.v)" data-v="${v.replace(/"/g,'&quot;')}">${esc(v)}</button>`
-      ).join('') + '</div>';
+      if (vars.length === 0) { varDiv.innerHTML = ''; return; }
+      varDiv.innerHTML = `<div class="variations-list">${vars.map(v => `<button class="variation-btn" onclick="selectVariation('${id}','${v.replace(/'/g, "\\'").replace(/\n/g, ' ')}')">${esc(v)}</button>`).join('')}</div>`;
     }
-  } catch(e) { showToast('Error'); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Buscá mejor'; } }
+  } catch (e) {
+    showToast('Error generando variaciones');
+    if (varDiv) varDiv.innerHTML = '';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '👎 Regenerar'; }
+  }
 }
 
-function selectVariation(id, btn) {
-  const text = typeof btn === 'string' ? btn : btn.dataset.v;
+function selectVariation(id, text) {
   const ta = document.getElementById('qreply-' + id);
   if (ta) { ta.value = text; ta.focus(); }
   const varDiv = document.getElementById('qvariations-' + id);
