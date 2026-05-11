@@ -945,7 +945,7 @@ function renderAgentHistory() {
       '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
       '<div class="history-reply">' + esc(item.reply_text||'') + '</div>' +
       '<div class="history-actions">' +
-        '<button class="btn-reject-history" onclick="rejectHistory('' + item.id + '')">👎 Estuvo mal</button>' +
+        '<button class="btn-reject-history" onclick="rejectHistory(\'' + item.id + '\')">👎 Estuvo mal</button>' +
       '</div>' +
     '</div>';
   });
@@ -997,7 +997,7 @@ function renderFAQView() {
         '<div class="faq-card-header">' +
           '<span class="faq-pregunta">' + esc(faq.pregunta) + '</span>' +
         '</div>' +
-        '<div class="faq-keywords">🔑 Keywords: ' + esc(faq.keywords) + '</div>' +
+        '<div class="faq-keywords">🎯 Intención: ' + esc(faq.keywords) + '</div>' +
         '<div class="faq-respuestas">';
       (faq.respuestas || []).forEach((r, i) => {
         html += '<div class="faq-respuesta-item">' +
@@ -1031,9 +1031,9 @@ function showFAQForm(faqData) {
     '</div>' +
 
     '<div>' +
-      '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">KEYWORDS (separadas por coma)</label>' +
-      '<div class="faq-hint">Palabras clave para detectar esta pregunta en los comentarios</div>' +
-      '<input class="faq-input" id="faq-keywords" style="margin-top:6px" placeholder="Ej: ácido,acido,desecho,tirar,neutralizar" value="' + esc(faqData ? faqData.keywords : '') + '">' +
+      '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">DESCRIPCIÓN DE LA INTENCIÓN</label>' +
+      '<div class="faq-hint">Describí qué está preguntando el usuario — la IA entiende el contexto aunque las palabras sean distintas</div>' +
+      '<input class="faq-input" id="faq-keywords" style="margin-top:6px" placeholder="Ej: preguntan qué hago con el ácido usado o si contamina o es peligroso para el cliente" value="' + esc(faqData ? faqData.keywords : '') + '">' +
     '</div>' +
 
     '<div>' +
