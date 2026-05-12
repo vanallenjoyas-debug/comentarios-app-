@@ -167,6 +167,7 @@
   .history-actions { padding: 6px 14px 10px; display: flex; justify-content: flex-end; }
   .btn-reject-history { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 12px; cursor: pointer; }
   .btn-reject-history:hover { border-color: var(--red); color: var(--red); }
+  .btn-delete-fb { background: var(--red); color: #fff; border: none; border-radius: var(--radius-sm); padding: 7px 14px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; }
 
   .faq-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid #5599ff; border-radius: var(--radius); margin: 0 16px 10px; overflow: hidden; }
   .faq-card-header { padding: 12px 14px; display: flex; align-items: center; gap: 8px; }
@@ -976,6 +977,7 @@ function renderAgentHistory() {
         '<button class="btn-rate-fix" onclick="showCorrection(\'' + item.id + '\',\'mejorable\')">⚠️ Mejorable</button>' +
         '<button class="btn-rate-bad" onclick="showCorrection(\'' + item.id + '\',\'mal\')">❌ Mal</button>' +
         '<button class="btn-reject" style="font-size:12px;padding:7px 12px;border-color:#5599ff;color:#5599ff" onclick="showFAQAssign(\'' + item.id + '\')">📋 Es del FAQ</button>' +
+        '<button class="btn-delete-fb" onclick="deleteFBComment(\'' + item.id + '\')">🗑 Borrar de FB</button>' +
         '<button class="btn-discard-queue" onclick="discardHistory(\'' + item.id + '\')">✕ Descartar</button>' +
       '</div>' +
       '<div class="history-correction" id="hfaq-' + item.id + '" style="display:none">' +
@@ -1070,6 +1072,24 @@ async function assignToFAQ(historyId, faqId) {
       agentHistory = agentHistory.filter(x => x.id !== historyId);
       if (agentHistory.length === 0) renderAgentHistory();
     } else { showToast('Error asignando al FAQ'); }
+  } catch(e) { showToast('Error de conexión'); }
+}
+
+async function deleteFBComment(id) {
+  if (!confirm('¿Seguro que querés borrar este comentario de Facebook?')) return;
+  try {
+    const r = await fetch(BACKEND + '/agent/history/' + id + '/delete-fb', {method: 'DELETE'});
+    const data = await r.json();
+    if (r.ok) {
+      if (data.deleted) {
+        showToast('🗑 Comentario borrado de Facebook');
+      } else {
+        showToast('⚠️ ' + (data.message || 'Andá a borrarlo manualmente en FB'));
+      }
+      document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
+      agentHistory = agentHistory.filter(x => x.id !== id);
+      if (agentHistory.length === 0) renderAgentHistory();
+    } else { showToast('Error al borrar'); }
   } catch(e) { showToast('Error de conexión'); }
 }
 
