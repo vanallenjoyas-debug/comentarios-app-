@@ -838,6 +838,9 @@ function discardComment(id){
   if(currentFilter==='videos'){
     currentVideoComments=currentVideoComments.filter(x=>x.id!==id);
     renderVideoFeed(currentVideoId,currentVideoTitle);
+  } else if(currentFilter==='fb-old'){
+    fbOldComments=fbOldComments.filter(x=>x.id!==id);
+    renderFeed();
   } else {
     comments=comments.filter(x=>x.id!==id);
     renderFeed();updateStats();
@@ -977,8 +980,16 @@ function renderAgentHistory() {
         '<button class="btn-rate-fix" onclick="showCorrection(\'' + item.id + '\',\'mejorable\')">⚠️ Mejorable</button>' +
         '<button class="btn-rate-bad" onclick="showCorrection(\'' + item.id + '\',\'mal\')">❌ Mal</button>' +
         '<button class="btn-reject" style="font-size:12px;padding:7px 12px;border-color:#5599ff;color:#5599ff" onclick="showFAQAssign(\'' + item.id + '\')">📋 Es del FAQ</button>' +
-        '<button class="btn-delete-fb" onclick="deleteFBComment(\'' + item.id + '\')">🗑 Borrar de FB</button>' +
+        '<button class="btn-delete-fb" onclick="showDeletePanel(\'' + item.id + '\')">🗑 Borrar de FB</button>' +
         '<button class="btn-discard-queue" onclick="discardHistory(\'' + item.id + '\')">✕ Descartar</button>' +
+      '</div>' +
+      '<div class="history-correction" id="hdeletepanel-' + item.id + '" style="display:none">' +
+        '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">¿Cómo lo hubieras respondido? <span style="color:var(--text3)">(opcional — si escribís algo se guarda como ejemplo de aprendizaje)</span></div>' +
+        '<textarea id="hdelete-text-' + item.id + '" rows="2" placeholder="Dejá vacío si solo querés borrar sin aprender..." style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;color:var(--text);font-family:\'DM Sans\',sans-serif;font-size:13px;resize:none;outline:none;min-height:50px"></textarea>' +
+        '<div style="display:flex;gap:8px;margin-top:6px">' +
+          '<button onclick="confirmDeleteFB(\'' + item.id + '\')" style="background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);padding:7px 14px;font-family:\'DM Sans\',sans-serif;font-size:12px;font-weight:600;cursor:pointer">🗑 Confirmar borrar</button>' +
+          '<button onclick="document.getElementById(\'hdeletepanel-' + item.id + '\').style.display=\'none\'" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;color:var(--text2);font-family:\'DM Sans\',sans-serif;font-size:12px;cursor:pointer">Cancelar</button>' +
+        '</div>' +
       '</div>' +
       '<div class="history-correction" id="hfaq-' + item.id + '" style="display:none">' +
         '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">¿A qué pregunta frecuente corresponde este comentario?</div>' +
@@ -1075,17 +1086,32 @@ async function assignToFAQ(historyId, faqId) {
   } catch(e) { showToast('Error de conexión'); }
 }
 
-async function deleteFBComment(id) {
-  if (!confirm('¿Seguro que querés borrar este comentario de Facebook?')) return;
+function showDeletePanel(id) {
+  const panel = document.getElementById('hdeletepanel-' + id);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    const ta = document.getElementById('hdelete-text-' + id);
+    if (ta) ta.focus();
+  }
+}
+
+async function confirmDeleteFB(id) {
+  const ta = document.getElementById('hdelete-text-' + id);
+  const correction = ta ? ta.value.trim() : '';
   try {
+    if (correction) {
+      await fetch(BACKEND + '/agent/history/' + id + '/rate', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({rating: 'mal', correction})
+      });
+    }
     const r = await fetch(BACKEND + '/agent/history/' + id + '/delete-fb', {method: 'DELETE'});
     const data = await r.json();
     if (r.ok) {
-      if (data.deleted) {
-        showToast('🗑 Comentario borrado de Facebook');
-      } else {
-        showToast('⚠️ ' + (data.message || 'Andá a borrarlo manualmente en FB'));
-      }
+      const baseMsg = data.deleted ? '🗑 Borrado de Facebook' : '⚠️ ' + (data.message || 'Borralo manualmente en FB');
+      showToast(correction ? baseMsg + ' — corrección guardada 👍' : baseMsg);
       document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
       agentHistory = agentHistory.filter(x => x.id !== id);
       if (agentHistory.length === 0) renderAgentHistory();
