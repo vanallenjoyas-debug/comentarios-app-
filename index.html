@@ -1103,7 +1103,7 @@ async function loadFAQView() {
 
 function renderFAQView() {
   const feed = document.getElementById('feed');
-  let html = '<button class="btn-faq-new" onclick="showFAQForm()">+ Nueva pregunta frecuente</button>';
+  let html = '<button class="btn-faq-new" onclick="showFAQForm();setTimeout(buildFAQEmojiBar,50)">+ Nueva pregunta frecuente</button>';
 
   if (faqs.length === 0) {
     html += '<div class="empty-state"><span class="emoji">💬</span>No tenés FAQs cargadas todavía.<br><small>Agregá preguntas frecuentes para que el agente las responda automáticamente.</small></div>';
@@ -1169,7 +1169,7 @@ function showFAQForm(faqData) {
 
 function editFAQ(id) {
   const faq = faqs.find(f => f.id === id);
-  if (faq) showFAQForm(faq);
+  if (faq) { showFAQForm(faq); setTimeout(buildFAQEmojiBar, 50); }
 }
 
 async function saveFAQ() {
@@ -1571,11 +1571,7 @@ function buildFAQEmojiBar() {
   });
 }
 
-var _origShowFAQForm = showFAQForm;
-function showFAQForm(faqData) {
-  _origShowFAQForm(faqData);
-  setTimeout(buildFAQEmojiBar, 50);
-}
+// emoji bar built via editFAQ and showFAQForm directly
 
 
 async function clearAllHistory() {
