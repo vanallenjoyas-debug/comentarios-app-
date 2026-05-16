@@ -1153,6 +1153,7 @@ function showFAQForm(faqData) {
     '<div>' +
       '<label style="font-size:12px;color:var(--text2);display:block;margin-bottom:4px">RESPUESTAS (una por línea, mínimo 2)</label>' +
       '<div class="faq-hint">El agente elige una al azar cada vez</div>' +
+      '<div id="faq-emoji-bar" style="display:flex;gap:4px;flex-wrap:wrap;padding:6px 0"></div>' +
       '<textarea class="faq-textarea" id="faq-respuestas" style="margin-top:6px" rows="6" placeholder="claro que no lo tiro al inodoro! El ácido se neutraliza y se almacena para entregarlo a una empresa especializada 💪&#10;jamás al desagüe! lo neutralizo y lo llevo a disposición final con empresa especializada 🙌&#10;eso nunca, se neutraliza y va a disposición final controlada 👋">' + esc(respuestasText) + '</textarea>' +
     '</div>' +
 
@@ -1260,39 +1261,7 @@ function renderAgentView() {
       <button class="btn-agent-secondary" onclick="loadAgentView()">↺ Actualizar</button>
     </div>`;
 
-  if (agentQueue.length === 0) {
-    html += `<div class="empty-state"><span class="emoji">✅</span>Cola vacía — el agente respondió todo</div>`;
-  } else {
-    html += `<div class="agent-section-title">Cola de revisión — ${agentQueue.length} pendientes</div>`;
-    agentQueue.forEach(item => {
-      const conf = item.confidence || 0;
-      const confClass = conf >= 0.6 ? 'high' : conf >= 0.4 ? 'med' : 'low';
-      const confLabel = Math.round(conf * 100) + '%';
-      html += `<div class="queue-card" id="qcard-${item.id}">
-        <div class="queue-card-top">
-          <div class="queue-meta">
-            <span class="queue-author">${esc(item.author||'Usuario')}</span>
-            <span style="font-size:11px;color:${item.network==='yt'?'#ff6666':'#5599ff'};font-family:'DM Mono',monospace">${item.network==='yt'?'▶ YouTube':'📘 Facebook'}</span>
-            <span class="queue-confidence ${confClass}">conf. ${confLabel}</span>
-          </div>
-          <div class="queue-post">📄 ${esc((item.post_title||item.post_id||'').substring(0,60))}</div>
-        </div>
-        <div class="queue-comment">${esc(item.comment_text||'')}</div>
-        <div class="queue-reply-area">
-          <textarea class="queue-reply-input" id="qreply-${item.id}" rows="3">${esc(item.suggested_reply||'')}</textarea>
-          <div style="display:flex;gap:6px;padding:6px 0;">
-            ${['🤷','🙌','🔥','😄','💪','😂','👋','👍','⚡','🫡','👌'].map(e=>`<button onclick="(function(){var ta=document.getElementById('qreply-${item.id}');if(ta){ta.value=(ta.value||'')+' ${e}';ta.focus();}})()" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:15px">${e}</button>`).join('')}
-          </div>
-          <div class="queue-actions">
-            <button class="btn-approve" onclick="approveQueueItem('${item.id}')">👍 Aprobar y publicar</button>
-            <button class="btn-reject" onclick="rejectQueueItem('${item.id}')">👎 Regenerar</button>
-            <button class="btn-discard-queue" onclick="discardQueueItem('${item.id}')">✕</button>
-          </div>
-          <div id="qvariations-${item.id}"></div>
-        </div>
-      </div>`;
-    });
-  }
+  html += `<div class="empty-state" style="padding:20px"><span class="emoji">✅</span>El agente responde automáticamente</div>`;
 
   if (s.recent_runs && s.recent_runs.length > 0) {
     html += `<div class="agent-section-title">Historial de ciclos</div><div class="agent-run-log">`;
@@ -1573,6 +1542,36 @@ async function deleteFBComment(id) {
     if (overlay) overlay.remove();
     showToast('Error de conexión');
   }
+}
+
+
+function insertEmojiFAQ(emoji) {
+  var ta = document.getElementById('faq-respuestas');
+  if (!ta) return;
+  var pos = ta.selectionStart;
+  ta.value = ta.value.substring(0, pos) + emoji + ta.value.substring(pos);
+  ta.selectionStart = ta.selectionEnd = pos + emoji.length;
+  ta.focus();
+}
+
+function buildFAQEmojiBar() {
+  var bar = document.getElementById('faq-emoji-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  ['🤷','🙌','🔥','😄','💪','😂','👋','👍','⚡','🫡','👌'].forEach(function(e) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = e;
+    btn.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:15px';
+    btn.onclick = function() { insertEmojiFAQ(e); };
+    bar.appendChild(btn);
+  });
+}
+
+var _origShowFAQForm = showFAQForm;
+function showFAQForm(faqData) {
+  _origShowFAQForm(faqData);
+  setTimeout(buildFAQEmojiBar, 50);
 }
 
 </script>
