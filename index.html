@@ -977,7 +977,7 @@ function renderAgentHistory() {
       '<div class="history-comment">' + esc(item.comment_text||'') + '</div>' +
       '<div class="history-reply">' + esc(item.reply_text||'') + '</div>' +
       '<div class="history-rating">' +
-        '<button style="background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;cursor:pointer" onclick="showDeletePanel(\'' + item.id + '\')">🗑 Borrar de FB</button>' +
+        '<button style="background:var(--red);color:#fff;border:none;border-radius:var(--radius-sm);padding:8px 16px;font-family:\'DM Sans\',sans-serif;font-size:13px;font-weight:600;cursor:pointer" onclick="deleteFBComment(\'' + item.id + '\')">🗑 Borrar de FB</button>' +
         '<button style="background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 16px;font-family:\'DM Sans\',sans-serif;font-size:13px;cursor:pointer" onclick="discardHistory(\'' + item.id + '\')">✕ Descartar</button>' +
       '</div>' +
     '</div>';
@@ -1540,6 +1540,20 @@ async function delExclusion(nombre, idx) {
     if (r.ok) { showToast('✓ Eliminada'); await loadCategoriesView(); }
     else showToast('Error');
   } catch(e) { showToast('Error'); }
+}
+
+
+async function deleteFBComment(id) {
+  try {
+    const r = await fetch(BACKEND + '/agent/history/' + id + '/delete-fb', {method: 'DELETE'});
+    const data = await r.json();
+    if (r.ok) {
+      showToast(data.deleted ? '🗑 Borrado de Facebook' : '⚠️ ' + (data.message || 'Borralo manualmente en FB'));
+      document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
+      agentHistory = agentHistory.filter(x => x.id !== id);
+      if (agentHistory.length === 0) renderAgentHistory();
+    } else { showToast('Error al borrar'); }
+  } catch(e) { showToast('Error de conexión'); }
 }
 
 </script>
