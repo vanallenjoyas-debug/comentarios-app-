@@ -1544,16 +1544,35 @@ async function delExclusion(nombre, idx) {
 
 
 async function deleteFBComment(id) {
+  const btn = document.querySelector('#hcard-' + id + ' button');
+  const card = document.getElementById('hcard-' + id);
+  // Show spinner overlay on the card
+  if (card) {
+    const overlay = document.createElement('div');
+    overlay.id = 'deloverlay-' + id;
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(15,15,15,0.7);display:flex;align-items:center;justify-content:center;border-radius:var(--radius);z-index:10';
+    overlay.innerHTML = '<div class="spinner"></div>';
+    card.style.position = 'relative';
+    card.appendChild(overlay);
+  }
   try {
     const r = await fetch(BACKEND + '/agent/history/' + id + '/delete-fb', {method: 'DELETE'});
     const data = await r.json();
     if (r.ok) {
       showToast(data.deleted ? '🗑 Borrado de Facebook' : '⚠️ ' + (data.message || 'Borralo manualmente en FB'));
-      document.getElementById('hcard-' + id) && document.getElementById('hcard-' + id).remove();
+      card && card.remove();
       agentHistory = agentHistory.filter(x => x.id !== id);
       if (agentHistory.length === 0) renderAgentHistory();
-    } else { showToast('Error al borrar'); }
-  } catch(e) { showToast('Error de conexión'); }
+    } else {
+      const overlay = document.getElementById('deloverlay-' + id);
+      if (overlay) overlay.remove();
+      showToast('Error al borrar');
+    }
+  } catch(e) {
+    const overlay = document.getElementById('deloverlay-' + id);
+    if (overlay) overlay.remove();
+    showToast('Error de conexión');
+  }
 }
 
 </script>
