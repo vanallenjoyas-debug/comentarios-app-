@@ -1286,6 +1286,12 @@ function renderAgentView() {
   }
 
   feed.innerHTML = html;
+
+  // Restore audit result if it exists
+  if (window._auditResult) {
+    const ar = document.getElementById('audit-result');
+    if (ar) { ar.style.display = 'block'; ar.textContent = window._auditResult; }
+  }
 }
 
 async function runAgentNow() {
@@ -1593,6 +1599,8 @@ async function clearAllHistory() {
 
 
 async function runAudit() {
+  // Re-render agent view to ensure elements exist
+  if (!document.getElementById('btn-audit')) await loadAgentView();
   const btn = document.getElementById('btn-audit');
   const result = document.getElementById('audit-result');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Auditando...'; }
@@ -1601,11 +1609,11 @@ async function runAudit() {
     const r = await fetch(BACKEND + '/agent/audit', { method: 'POST', headers: {'Content-Type':'application/json'} });
     const data = await r.json();
     if (result) {
-      if (data.count === 0) {
-        result.textContent = 'No hay respuestas nuevas desde la última auditoría.';
-      } else {
-        result.textContent = '📊 Auditoría de ' + data.count + ' respuestas:\n\n' + data.report;
-      }
+      const text = data.count === 0
+        ? 'No hay respuestas nuevas desde la última auditoría.'
+        : '📊 Auditoría de ' + data.count + ' respuestas:\n\n' + data.report;
+      result.textContent = text;
+      window._auditResult = text;
     }
     showToast('✓ Auditoría completada');
   } catch(e) {
