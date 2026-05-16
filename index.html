@@ -1262,7 +1262,10 @@ function renderAgentView() {
     <div class="agent-actions">
       <button class="btn-agent-run" id="btn-run-agent" onclick="runAgentNow()">▶ Correr ciclo ahora</button>
       <button class="btn-agent-secondary" onclick="loadAgentView()">↺ Actualizar</button>
-    </div>`;
+      <button class="btn-agent-secondary" id="btn-audit" onclick="runAudit()">🔍 Auditar respuestas</button>
+    </div>
+    <div id="audit-result" style="display:none;margin:0 16px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;font-size:13px;line-height:1.6;white-space:pre-wrap"></div>
+    `;
 
   html += `<div class="empty-state" style="padding:20px"><span class="emoji">✅</span>El agente responde automáticamente</div>`;
 
@@ -1586,6 +1589,31 @@ async function clearAllHistory() {
   agentHistory = [];
   showToast('🗑 Historial vaciado (' + done + ' entradas)');
   renderAgentHistory();
+}
+
+
+async function runAudit() {
+  const btn = document.getElementById('btn-audit');
+  const result = document.getElementById('audit-result');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Auditando...'; }
+  if (result) { result.style.display = 'block'; result.textContent = 'Analizando respuestas...'; }
+  try {
+    const r = await fetch(BACKEND + '/agent/audit', { method: 'POST', headers: {'Content-Type':'application/json'} });
+    const data = await r.json();
+    if (result) {
+      if (data.count === 0) {
+        result.textContent = 'No hay respuestas nuevas desde la última auditoría.';
+      } else {
+        result.textContent = '📊 Auditoría de ' + data.count + ' respuestas:\n\n' + data.report;
+      }
+    }
+    showToast('✓ Auditoría completada');
+  } catch(e) {
+    if (result) result.textContent = 'Error al auditar';
+    showToast('Error en auditoría');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔍 Auditar respuestas'; }
+  }
 }
 
 </script>
